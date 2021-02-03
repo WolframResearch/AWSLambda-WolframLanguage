@@ -204,7 +204,10 @@ sanitizeHandler[___] := sanitizeHandler[Null]
 (* ::Subsection:: *)
 (* Process an invocation request using the handler *)
 
-processInvocation[invocationData_HTTPResponse, handler_APIFunction] := Module[{
+processInvocation[
+    invocationData_HTTPResponse,
+    handler_APIFunction
+] := Module[{
     environment = GetEnvironment[],
     parseJSONHeader = (Replace[
         ImportString[#, "RawJSON"],
@@ -217,6 +220,7 @@ processInvocation[invocationData_HTTPResponse, handler_APIFunction] := Module[{
     requestBody,
     requestContextData,
 
+    outputSpec,
     handlerOutput
 },
     requestHeaders = invocationData["Headers"];
@@ -265,7 +269,6 @@ processInvocation[invocationData_HTTPResponse, handler_APIFunction] := Module[{
             ToLowerCase["Lambda-Runtime-Invoked-Function-Arn"],
             Missing["NotAvailable"]
         ],
-
         "ClientContext" -> Lookup[
             requestHeaders,
             ToLowerCase["Lambda-Runtime-Client-Context"],
@@ -281,6 +284,7 @@ processInvocation[invocationData_HTTPResponse, handler_APIFunction] := Module[{
 
 
         (* process environment data *)
+
         "FunctionName" -> Lookup[
             environment,
             "AWS_LAMBDA_FUNCTION_NAME",
@@ -325,6 +329,20 @@ processInvocation[invocationData_HTTPResponse, handler_APIFunction] := Module[{
         withCleanContext[handler[requestBody]]
     ];
 
+    If[
+        (* if the APIFunction indicates an output form *)
+        Length[handler] >= 3,
+        (* then wrap the output appropriately *)
+        outputSpec = handler[[3]];
+        handlerOutput = Switch[outputSpec,
+            _String,
+                handlerOutput = ExportForm[
+                    handlerOutput,
+                    outputSpec
+                ]
+        ]
+    ];
+
     sendInvocationResponse[requestID, handlerOutput];
 ]
 
@@ -363,6 +381,9 @@ getNextInvocation[] := Module[{
 (* ::Subsection:: *)
 (* Send invocation response *)
 
+(* ::Subsubsection:: *)
+(* Verbatim ByteArray *)
+
 sendInvocationResponse[requestID_String, data_ByteArray] := Module[{
     request
 },
@@ -382,27 +403,8 @@ sendInvocationResponse[requestID_String, data_ByteArray] := Module[{
     ];
 ]
 
-sendInvocationResponse[requestID_String, assoc_Association] := Module[{
-    responseBody = ExportByteArray[
-        assoc,
-        "RawJSON",
-        "Compact" -> True
-    ]
-},
-    If[
-        (* if the handler output was successfully serialized to JSON *)
-        ByteArrayQ[responseBody],
-        (* then send it *)
-        sendInvocationResponse[requestID, responseBody],
-        (* else send an error *)
-        sendInvocationError[
-            requestID,
-            Failure["SerializationFailure", <|
-                "MessageTemplate" -> "Handler output association could not be serialized to JSON"
-            |>]
-        ]
-    ]
-]
+(* ::Subsubsection:: *)
+(* Verbatim string *)
 
 sendInvocationResponse[
     requestID_String,
@@ -412,24 +414,71 @@ sendInvocationResponse[
     StringToByteArray[str]
 ]
 
+(* ::Subsubsection:: *)
+(* Failure (to invocation error) *)
+
 sendInvocationResponse[
     requestID_String,
     failure_Failure
 ] := sendInvocationError[requestID, failure]
 
-sendInvocationResponse[requestID_String, expr_] := Module[{
-    responseBody = GenerateHTTPResponse[expr]["BodyByteArray"]
+(* ::Subsubsection:: *)
+(* ExportForm wrapper (for GenerateHTTPResponse) *)
+
+sendInvocationResponse[
+    requestID_String,
+    wrapper:ExportForm[expr_, format_, ___]
+] := Module[{
+    responseBytes = GenerateHTTPResponse[wrapper]["BodyByteArray"]
 },
     If[
-        (* if the handler output was successfully serialized to JSON *)
-        ByteArrayQ[responseBody],
+        (* if the handler output was successfully serialized *)
+        ByteArrayQ[responseBytes],
         (* then send it *)
-        sendInvocationResponse[requestID, responseBody],
+        sendInvocationResponse[requestID, responseBytes],
         (* else send an error *)
         sendInvocationError[
             requestID,
             Failure["SerializationFailure", <|
-                "MessageTemplate" -> "Handler output expression could not be serialized"
+                "MessageTemplate" -> StringJoin[{
+                    "Handler output expression with head `head` could not ",
+                    "be exported to format `format`"
+                }],
+                "MessageParameters" -> <|
+                    "head" -> ToString[Head[expr], InputForm],
+                    "format" -> ToString[Head[format], InputForm]
+                |>
+            |>]
+        ]
+    ]
+]
+
+(* ::Subsubsection:: *)
+(* Arbitrary expression (to JSON) *)
+
+sendInvocationResponse[requestID_String, expr_] := Module[{
+    responseBytes = ExportByteArray[
+        expr,
+        "RawJSON",
+        "Compact" -> True
+    ]
+},
+    If[
+        (* if the handler output was successfully serialized to JSON *)
+        ByteArrayQ[responseBytes],
+        (* then send it *)
+        sendInvocationResponse[requestID, responseBytes],
+        (* else send an error *)
+        sendInvocationError[
+            requestID,
+            Failure["SerializationFailure", <|
+                "MessageTemplate" -> StringJoin[{
+                    "Handler output expression with head `head` could not ",
+                    "be serialized to JSON"
+                }],
+                "MessageParameters" -> <|
+                    "head" -> ToString[Head[expr], InputForm]
+                |>
             |>]
         ]
     ]
