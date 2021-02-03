@@ -38,7 +38,10 @@ ExternalBundle[{
         "country" -> "Country",
         "year" -> "Integer" :> DateValue["Year"]
     }, <|
-        "population" -> EntityValue[#country, Dated["Population", #year]]
+        "population" -> QuantityMagnitude@EntityValue[
+            #country,
+            Dated["Population", #year]
+        ]
     |> & ],
 
     "countryMap" -> APIFunction[
