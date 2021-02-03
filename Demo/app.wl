@@ -42,7 +42,7 @@ ExternalBundle[{
             #country,
             Dated["Population", #year]
         ]
-    |> & ],
+    |> &],
 
     "countryMap" -> APIFunction[
         "country" -> "Country",
@@ -53,7 +53,7 @@ ExternalBundle[{
     "stockPrice" -> APIFunction[
         "ticker" -> "Financial",
         Replace[
-            #ticker["Last"],
+            EntityValue[#ticker, "Last"],
             {
                 q_Quantity :> <|
                     "magnitude" -> QuantityMagnitude[q],
