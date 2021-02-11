@@ -1,6 +1,14 @@
 Echo["Loading app.wl"]
 
-ExternalBundle[{
+If[
+    StringStartsQ[$AWSLambdaHandlerName, "http-"],
+    $AWSLambdaHandlerMode = "HTTP"
+]
+
+
+<|
+
+    (* Raw-mode handlers *)
 
     "pi" -> APIFunction[{
         "digits" -> "Integer" -> 50,
@@ -98,22 +106,104 @@ ExternalBundle[{
         ToString[<|
             "Hello" -> "World",
             "Event" -> #,
-            "Context" -> $AWSLambdaContextData,
+            "$AWSLambdaHandlerName" -> $AWSLambdaHandlerName,
+            "$AWSLambdaHandlerMode" -> $AWSLambdaHandlerMode,
+            "$AWSLambdaContextData" -> $AWSLambdaContextData,
+            "$AWSLambdaRawRequestMetadata" -> $AWSLambdaRawRequestMetadata,
+            "ContextInfo" -> <|
+                "$Context" -> $Context,
+                "$ContextPath" -> $ContextPath,
+                "$Packages" -> Sort@$Packages
+            |>,
             "Directories" -> <|
-                "HomeDirectory" -> $HomeDirectory,
+                "$HomeDirectory" -> $HomeDirectory,
                 "HomeDirectory[]" -> HomeDirectory[],
-                "UserBaseDirectory" -> $UserBaseDirectory,
-                "UserAddOnsDirectory" -> $UserAddOnsDirectory,
-                "UserBasePacletsDirectory" -> $UserBasePacletsDirectory,
-                "DefaultLocalBase" -> $DefaultLocalBase,
-                "LocalBase" -> $LocalBase,
-                "UserDocumentsDirectory" -> $UserDocumentsDirectory,
-                "WolframDocumentsDirectory" -> $WolframDocumentsDirectory,
-                "InitialDirectory" -> $InitialDirectory,
-                "PreferencesDirectory" -> $PreferencesDirectory,
-                "CacheBaseDirectory" -> $CacheBaseDirectory
+                "$UserBaseDirectory" -> $UserBaseDirectory,
+                "$UserAddOnsDirectory" -> $UserAddOnsDirectory,
+                "$UserBasePacletsDirectory" -> $UserBasePacletsDirectory,
+                "$DefaultLocalBase" -> $DefaultLocalBase,
+                "$LocalBase" -> $LocalBase,
+                "$UserDocumentsDirectory" -> $UserDocumentsDirectory,
+                "$WolframDocumentsDirectory" -> $WolframDocumentsDirectory,
+                "$InitialDirectory" -> $InitialDirectory,
+                "$PreferencesDirectory" -> $PreferencesDirectory,
+                "$CacheBaseDirectory" -> $CacheBaseDirectory
             |>
         |>, InputForm] &
+    ],
+
+
+    (* HTTP-mode handlers *)
+
+    "http-squared" -> APIFunction["x" -> "Number", #x^2 &],
+
+    "http-form" :> FormFunction["x" -> "String"],
+    "http-image" -> Delayed[RandomImage[], "PNG"],
+    "http-image-form" :> FormFunction[
+        {"image" -> "Image", "filter" -> ImageEffect[]}, 
+        ImageEffect[#image, #filter] &,
+        "PNG",
+        AppearanceRules -> <|
+            "Title" -> "Welcome to Wolfram Web Engine for AWS Lambda",
+            "Description" -> TemplateApply[
+                "This is a sample application running on a `` kernel.",
+                $VersionNumber
+            ]
+        |>
+    ],
+
+    "http-dispatcher" -> URLDispatcher[{
+        "/api" -> APIFunction["x" -> "String"],
+        "/form" :> FormFunction["x" -> "String"],
+        "/image" -> Delayed[RandomImage[], "PNG"],
+
+        StringExpression[
+            "/power/",
+            base : Repeated[DigitCharacter, 3],
+            "^",
+            power : Repeated[DigitCharacter, 3]
+        ] :> ExportForm[
+            FromDigits[base] ^ FromDigits[power],
+            "WL"
+        ],
+
+        "/" -> Delayed@ExportForm[
+            StringJoin@{
+                "Hello! I am a URLDispatcher. Try one of these links: ",
+                "<a href=\"api\">/api</a>, ",
+                "<a href=\"form\">/form</a>, ",
+                "<a href=\"image\">/image</a>, ",
+                "<a href=\"power/42^24\">/power/42^24</a>",
+                "<br/><br/>",
+                "Here is the current HTTPRequestData[]:<br/>",
+                "<code>",
+                ToString[HTTPRequestData[], InputForm],
+                "</code><br/>",
+                "And the $HTTPRequest:<br/>",
+                "<code>",
+                ToString[$HTTPRequest, InputForm],
+                "</code>"
+            },
+            "HTML"
+        ]
+    }],
+
+    "http-redirect" -> Delayed@HTTPRedirect["https://wolfram.com"],
+    "http-error" -> Delayed@HTTPErrorResponse[500],
+
+    "http-debugData" -> Delayed[
+        <|
+            "$AWSLambdaHandlerName" -> $AWSLambdaHandlerName,
+            "$AWSLambdaHandlerMode" -> $AWSLambdaHandlerMode,
+            "$AWSLambdaContextData" -> $AWSLambdaContextData,
+            "$AWSLambdaRawRequestMetadata" -> $AWSLambdaRawRequestMetadata,
+
+            "$HTTPRequest" -> $HTTPRequest,
+            "HTTPRequestData[]" -> HTTPRequestData[],
+            "$RequesterAddress" -> $RequesterAddress,
+            "$UserAgentString" -> $UserAgentString
+        |>,
+        {"JSON", "ConversionFunction" -> (ToString[#, InputForm] &)}
     ]
 
-}]
+|>

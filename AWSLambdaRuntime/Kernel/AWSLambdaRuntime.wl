@@ -4,53 +4,84 @@ AWSLambdaRuntime`StartRuntime
 
 Begin["`Private`"]
 
+Block[{$ContextPath},
+    Needs["CloudObject`"];
+    Needs["CURLLink`"];
+    Needs["Forms`"];
+]
+
+Needs["AWSLambdaRuntime`API`"]
+Needs["AWSLambdaRuntime`Modes`"]
+Needs["AWSLambdaRuntime`Utility`"]
+
+logTiming[args___] := Print[DateList[], " ", args]
+
 (* ::Section:: *)
 (* Environment variables *)
 
-$LambdaRuntimeAPIHost = Environment["AWS_LAMBDA_RUNTIME_API"]
-$LambdaRuntimeAPIVersion = "2018-06-01"
+AWSLambdaRuntime`$LambdaRuntimeAPIHost = Environment["AWS_LAMBDA_RUNTIME_API"]
+AWSLambdaRuntime`$LambdaRuntimeAPIVersion = "2018-06-01"
+
+
+Print["Context info at top of main file: ", ToString[<|
+    "Context" -> $Context,
+    "ContextPath" -> $ContextPath,
+    "Packages" -> Sort@$Packages
+|>, InputForm]]
 
 (* ::Section:: *)
 (* Handler initialization and main loop *)
 
 AWSLambdaRuntime`StartRuntime[] := Module[{
     handler,
+    validateResult,
     invocationData
 },
+    logTiming["Start of StartRuntime"];
     If[
         (* if the API host is not set *)
-        !StringQ[$LambdaRuntimeAPIHost],
+        !StringQ[AWSLambdaRuntime`$LambdaRuntimeAPIHost],
         (* then print an error and quit (we can't emit a proper initialization error
             to the API if we don't know what the API host is...) *)
         Print["FATAL RUNTIME ERROR: AWS_LAMBDA_RUNTIME_API environment variable not set"];
         Exit[40];
     ];
-    Echo["starting runtime!"];
-    Echo[GetEnvironment[], "environment"];
 
-    (* load the handler function from the handler file *)
+    (* load the handler expression from the handler file *)
+    logTiming["Loading handler"];
     handler = loadHandler[];
+    logTiming["Loaded handler"];
 
-    Which[
+    Print["Context info after loading handler: ", ToString[<|
+        "Context" -> $Context,
+        "ContextPath" -> $ContextPath,
+        "Packages" -> Sort@$Packages
+    |>, InputForm]];
+
+    If[
         (* if loadHandler failed *)
         FailureQ[handler],
         (* then emit an error and exit *)
-        exitWithInitializationError[handler],
-
-        (* if the extracted handler is not an APIFunction (sanity check) *)
-        Head[handler] =!= APIFunction,
-        (* then emit an error and exit *)
-        exitWithInitializationError@Failure["InvalidHandler", <|
-            "MessageTemplate" -> StringJoin[{
-                "The handler expression with head `1` is not an APIFunction expression"
-            }],
-            "MessageParameters" -> {Head[handler]}
-        |>]
+        AWSLambdaRuntime`API`ExitWithInitializationError[handler]
     ];
+
+    validateResult = AWSLambdaRuntime`Modes`ValidateHandler[
+        AWSLambdaRuntime`Handler`$AWSLambdaHandlerMode,
+        handler
+    ];
+
+    If[
+        (* if the handler is invalid *)
+        FailureQ[validateResult],
+        (* then emit an error and exit *)
+        AWSLambdaRuntime`API`ExitWithInitializationError[validateResult]
+    ];
+
+    logTiming["Starting main loop"];
 
     (* main loop: long-poll for invocations and process them *)
     While[True,
-        invocationData = getNextInvocation[];
+        invocationData = AWSLambdaRuntime`API`GetNextInvocation[];
         processInvocation[invocationData, handler];
     ];
 
@@ -59,6 +90,10 @@ AWSLambdaRuntime`StartRuntime[] := Module[{
 
 (* ::Subsection:: *)
 (* Load user handler *)
+
+(* "Raw" or "HTTP";
+    used if AWSLambdaRuntime`Handler`$AWSLambdaHandlerMode isn't set *)
+$defaultHandlerMode = "Raw"
 
 loadHandler[] := Module[{
     taskRootDirectory = Lookup[
@@ -71,7 +106,7 @@ loadHandler[] := Module[{
         "_HANDLER",
         "app"
     ],
-    allowedHandlerFileExtensions = "wl" | "m" | "mx",
+    allowedHandlerFileExtensions = "wl" | "m" | "mx" | "wxf",
 
     handlerFileBaseName,
     handlerName,
@@ -91,6 +126,15 @@ loadHandler[] := Module[{
     ];
 
     {handlerFileBaseName, handlerName} = PadRight[StringSplit[handlerSpec, ".", 2], 2, None];
+    AWSLambdaRuntime`Handler`$AWSLambdaHandlerName = handlerName;
+
+    (* can be overridden by handler file initialization code *)
+    AWSLambdaRuntime`Handler`$AWSLambdaHandlerMode = Lookup[
+        GetEnvironment[],
+        "WOLFRAM_LAMBDA_HANDLER_MODE",
+        $defaultHandlerMode
+    ];
+
     matchingHandlerFilenames = FileNames[StringExpression[
         handlerFileBaseName,
         ".",
@@ -113,7 +157,10 @@ loadHandler[] := Module[{
 
     handlerFileName = ExpandFileName@First[matchingHandlerFilenames];
 
-    handlerFileReturnValue = withCleanContext@Get[handlerFileName];
+    (* load the handler file, allowing any initialization code to run *)
+    handlerFileReturnValue = AWSLambdaRuntime`Utility`WithCleanContext[
+        Get[handlerFileName]
+    ];
 
     handler = sanitizeHandler[handlerFileReturnValue];
 
@@ -125,36 +172,36 @@ loadHandler[] := Module[{
     ];
 
     If[
-        (* if the handler file returned a set of multiple functions *)
+        (* if the handler file returned a set of multiple handlers *)
         AssociationQ[handler],
         (* then attempt to extract the one indicated in the handler spec string *)
         Which[
-            (* there's no handler function name *)
+            (* there's no handler expression name *)
             !StringQ[handlerName],
                 Return@Failure["NoHandlerName", <|
                     "MessageTemplate" -> StringJoin[
-                        "The handler file returned a set of multiple handler functions (`functionNames`), ",
-                        "but the supplied handler string \"`handlerSpec`\" does not indicate a ",
-                        "function by name; try giving a handler string like ",
-                        "\"`handlerFileBaseName`.`firstFunctionName`\""
+                        "The handler file returned a set of multiple handler expression ",
+                        "(`handlerNames`), but the supplied handler string \"`handlerSpec`\" ",
+                        "does not indicate a handler by name; try giving a handler string ",
+                        "like \"`handlerFileBaseName`.`firstHandlerName`\""
                     ],
                     "MessageParameters" -> <|
-                        "functionNames" -> ToString[Keys@handler, InputForm],
+                        "handlerNames" -> ToString[Keys@handler, InputForm],
                         "handlerSpec" -> handlerSpec,
                         "handlerFileBaseName" -> handlerFileBaseName,
-                        "firstFunctionName" -> First@Keys[handler]
+                        "firstHandlerName" -> First@Keys[handler]
                     |>
                 |>],
 
-            (* the specified function name doesn't exist *)
+            (* the specified handler name doesn't exist *)
             !KeyExistsQ[handler, handlerName],
                 Return@Failure["NamedHandlerMissing", <|
                     "MessageTemplate" -> StringJoin[
-                        "The set of handler functions (`functionNames`) returned by the handler file does not ",
-                        "include the named function \"`handlerName`\""
+                        "The set of handler expressions (`handlerNames`) returned by the handler file does not ",
+                        "include the named handler \"`handlerName`\""
                     ],
                     "MessageParameters" -> <|
-                        "functionNames" -> StringRiffle[Keys@handler, ", "],
+                        "handlerNames" -> StringRiffle[Keys@handler, ", "],
                         "handlerName" -> handlerName
                     |>
                 |>]
@@ -169,34 +216,28 @@ loadHandler[] := Module[{
 (* ::Subsubsection:: *)
 (* Sanitize/validate the return value from a handler file *)
 
-sanitizeHandler[f_APIFunction] := f
-
-sanitizeHandler[
-    ExternalBundle[items:(_Association | {Rule[_String, _]..}), ___]
-] := sanitizeHandler[items]
-
-sanitizeHandler[rules:{Rule[_String, _]..}] := sanitizeHandler[<|rules|>]
+sanitizeHandler[rules:{__Rule}] := sanitizeHandler[<|rules|>]
 
 sanitizeHandler[assoc_Association?(And[
-    AllTrue[Keys[#], StringQ],
-    MatchQ[Values[#], {__APIFunction}]
+    Length[#] > 0,
+    AllTrue[Keys[#], StringQ]
 ] &)] := assoc
 
-sanitizeHandler[Null] := Failure["NullHandler", <|
+sanitizeHandler[assoc_Association] := Failure["InvalidHandler", <|
     "MessageTemplate" -> StringJoin[{
-        "The handler file did not return an APIFunction expression or an association ",
-        "or ExternalBundle expression consisting of APIFunction expressions"
+        "The association returned by the handler file is empty or ",
+        "does not have strings as keys"
     }]
 |>]
 
-sanitizeHandler[expr_] := Failure["InvalidHandler", <|
+sanitizeHandler[Null] := Failure["NullHandler", <|
     "MessageTemplate" -> StringJoin[{
-        "The expression with head `1` returned from the handler file is neither an APIFunction ",
-        "expression nor an association or ExternalBundle expression with string keys and ",
-        "APIFunction expressions as values"
-    }],
-    "MessageParameters" -> {Head[expr]}
+        "The handler file did not return an expression or ",
+        "association of expressions"
+    }]
 |>]
+
+sanitizeHandler[handler_] := handler
 
 (* handle weird things like Sequence *)
 sanitizeHandler[___] := sanitizeHandler[Null]
@@ -206,13 +247,11 @@ sanitizeHandler[___] := sanitizeHandler[Null]
 
 processInvocation[
     invocationData_HTTPResponse,
-    handler_APIFunction
+    handler_
 ] := Module[{
     environment = GetEnvironment[],
-    parseJSONHeader = (Replace[
-        ImportString[#, "RawJSON"],
-        assoc_Association :> KeyMap[Capitalize, assoc],
-        All
+    parseJSONHeader = (AWSLambdaRuntime`Utility`CapitalizeAllKeys[
+        ImportString[#, "RawJSON"]
     ] &),
     requestHeaders,
     requestID,
@@ -244,7 +283,7 @@ processInvocation[
         (* if the request didn't parse *)
         !AssociationQ[requestBody],
         (* then emit an error and return to the main loop *)
-        sendInvocationError[
+        AWSLambdaRuntime`API`SendInvocationError[
             requestID,
             Failure["InvocationParseFailure", <|
                 "MessageTemplate" -> "Failed to parse request payload as JSON"
@@ -295,12 +334,6 @@ processInvocation[
             "AWS_LAMBDA_FUNCTION_VERSION",
             Missing["NotAvailable"]
         ],
-        "MemoryLimit" -> Lookup[
-            environment,
-            "AWS_LAMBDA_FUNCTION_MEMORY_SIZE",
-            Missing["NotAvailable"],
-            Quantity[FromDigits[#], "Megabytes"] &
-        ],
         "LogGroupName" -> Lookup[
             environment,
             "AWS_LAMBDA_LOG_GROUP_NAME",
@@ -310,9 +343,18 @@ processInvocation[
             environment,
             "AWS_LAMBDA_LOG_STREAM_NAME",
             Missing["NotAvailable"]
+        ],
+
+        (* delayed rule to avoid causing QuantityUnits` to load *)
+        Lookup[
+            environment,
+            "AWS_LAMBDA_FUNCTION_MEMORY_SIZE",
+            "MemoryLimit" -> Missing["NotAvailable"],
+            With[{n = FromDigits[#]},
+                "MemoryLimit" :> Quantity[n, "Megabytes"]
+            ] &
         ]
     |>;
-    Echo[requestContextData, "Request context data"];
 
 
     SetEnvironment[
@@ -323,334 +365,28 @@ processInvocation[
         ]
     ];
 
+    logTiming["Before evaluating handler"];
     handlerOutput = Block[{
-        System`$AWSLambdaContextData = requestContextData
+        AWSLambdaRuntime`Handler`$AWSLambdaContextData = requestContextData
     },
-        withCleanContext[handler[requestBody]]
-    ];
-
-    If[
-        (* if the APIFunction indicates an output form *)
-        Length[handler] >= 3,
-        (* then wrap the output appropriately *)
-        outputSpec = handler[[3]];
-        handlerOutput = Switch[outputSpec,
-            _String,
-                handlerOutput = ExportForm[
-                    handlerOutput,
-                    outputSpec
-                ]
+        AWSLambdaRuntime`Modes`EvaluateHandler[
+            AWSLambdaRuntime`Handler`$AWSLambdaHandlerMode,
+            handler,
+            requestBody,
+            requestContextData
         ]
     ];
+    logTiming["After evaluating handler"];
 
-    sendInvocationResponse[requestID, handlerOutput];
+    Print["Context info after evaluating handler: ", ToString[<|
+        "Context" -> $Context,
+        "ContextPath" -> $ContextPath,
+        "Packages" -> Sort@$Packages
+    |>, InputForm]];
+
+    AWSLambdaRuntime`API`SendInvocationResponse[requestID, handlerOutput];
 ]
 
-(* ::Section:: *)
-(* API requests *)
-
-(* ::Subsection:: *)
-(* Long-poll for next invocation *)
-
-getNextInvocation[] := Module[{
-    request,
-    response
-},
-    request = buildAPIRequest[<|
-        "Method" -> "GET",
-        "Path" -> "runtime/invocation/next"
-    |>];
-    response = handleAPIResponseError@URLRead[
-        request,
-        TimeConstraint -> Infinity
-    ];
-    Echo[response, "received"];
-
-    If[
-        (* if the request failed *)
-        FailureQ[response],
-        (* then print an error and exit (to avoid
-            getting stuck in an infinite loop) *)
-        Print["RUNTIME ERROR: " <> response["Message"]];
-        Exit[43];
-    ];
-
-    Return[response]
-]
-
-(* ::Subsection:: *)
-(* Send invocation response *)
-
-(* ::Subsubsection:: *)
-(* Verbatim ByteArray *)
-
-sendInvocationResponse[requestID_String, data_ByteArray] := Module[{
-    request
-},
-    request = buildAPIRequest[<|
-        "Method" -> "POST",
-        "Path" -> {"runtime/invocation", requestID, "response"},
-        "Body" -> data
-    |>];
-    Echo[request, "sending"];
-
-    response = handleAPIResponseError@URLRead[request];
-    Echo[response, "received"];
-
-    If[
-        FailureQ[response],
-        Print["RUNTIME ERROR: " <> response["Message"]]
-    ];
-]
-
-(* ::Subsubsection:: *)
-(* Verbatim string *)
-
-sendInvocationResponse[
-    requestID_String,
-    str_String
-] := sendInvocationResponse[
-    requestID,
-    StringToByteArray[str]
-]
-
-(* ::Subsubsection:: *)
-(* Failure (to invocation error) *)
-
-sendInvocationResponse[
-    requestID_String,
-    failure_Failure
-] := sendInvocationError[requestID, failure]
-
-(* ::Subsubsection:: *)
-(* ExportForm wrapper (for GenerateHTTPResponse) *)
-
-sendInvocationResponse[
-    requestID_String,
-    wrapper:ExportForm[expr_, format_, ___]
-] := Module[{
-    responseBytes = GenerateHTTPResponse[wrapper]["BodyByteArray"]
-},
-    If[
-        (* if the handler output was successfully serialized *)
-        ByteArrayQ[responseBytes],
-        (* then send it *)
-        sendInvocationResponse[requestID, responseBytes],
-        (* else send an error *)
-        sendInvocationError[
-            requestID,
-            Failure["SerializationFailure", <|
-                "MessageTemplate" -> StringJoin[{
-                    "Handler output expression with head `head` could not ",
-                    "be exported to format `format`"
-                }],
-                "MessageParameters" -> <|
-                    "head" -> ToString[Head[expr], InputForm],
-                    "format" -> ToString[Head[format], InputForm]
-                |>
-            |>]
-        ]
-    ]
-]
-
-(* ::Subsubsection:: *)
-(* Arbitrary expression (to JSON) *)
-
-sendInvocationResponse[requestID_String, expr_] := Module[{
-    responseBytes = ExportByteArray[
-        expr,
-        "RawJSON",
-        "Compact" -> True
-    ]
-},
-    If[
-        (* if the handler output was successfully serialized to JSON *)
-        ByteArrayQ[responseBytes],
-        (* then send it *)
-        sendInvocationResponse[requestID, responseBytes],
-        (* else send an error *)
-        sendInvocationError[
-            requestID,
-            Failure["SerializationFailure", <|
-                "MessageTemplate" -> StringJoin[{
-                    "Handler output expression with head `head` could not ",
-                    "be serialized to JSON"
-                }],
-                "MessageParameters" -> <|
-                    "head" -> ToString[Head[expr], InputForm]
-                |>
-            |>]
-        ]
-    ]
-]
-
-(* ::Subsection:: *)
-(* Runtime initialization error *)
-
-sendInvocationError[requestID_String, failure_Failure] := Module[{
-    request,
-    response
-},
-    request = buildAPIRequest[<|
-        "Method" -> "POST",
-        "Path" -> {"runtime/invocation", requestID, "error"},
-        failureToErrorRequest[failure]
-    |>];
-    Echo[request, "sending"];
-
-    response = handleAPIResponseError@URLRead[request];
-    Echo[response, "received"];
-
-    If[
-        FailureQ[response],
-        Print["RUNTIME ERROR: " <> response["Message"]]
-    ];
-]
-
-(* ::Subsection:: *)
-(* Runtime initialization error (send and immediately exit) *)
-
-exitWithInitializationError[failure_Failure] := Module[{
-    request,
-    response
-},
-    Print["RUNTIME ERROR: " <> failure["Message"]];
-    request = buildAPIRequest[<|
-        "Method" -> "POST",
-        "Path" -> "runtime/init/error",
-        failureToErrorRequest[failure]
-    |>];
-    Echo[request, "sending"];
-    response = handleAPIResponseError@URLRead[request];
-    Echo[response, "received"];
-    Exit[41]
-]
-
-exitWithInitializationError[___] := exitWithInitializationError[
-    Failure["UnknownFailure", <|
-        "MessageTemplate" -> "An unknown failure occurred."
-    |>]
-]
-
-(* ::Section:: *)
-(* Utilities *)
-
-(* ::Subsection:: *)
-(* buildAPIRequest - build an HTTPRequest to the runtime API endpoint *)
-
-buildAPIRequest[requestData_Association] := Module[{},
-    Return@HTTPRequest[<|
-        requestData,
-        "Scheme" -> "http",
-        "Domain" -> $LambdaRuntimeAPIHost,
-        "Path" -> Flatten@{
-            $LambdaRuntimeAPIVersion,
-            Lookup[requestData, "Path", {}]
-        }
-    |>]
-]
-
-(* ::Subsection:: *)
-(* failureToErrorRequest - convert a Failure expression into request parameters *)
-
-failureToErrorRequest[failure_Failure] := Module[{
-    failureTag = Replace[
-        failure["Tag"],
-        Except[_String] -> "UnknownFailure"
-    ]
-},
-    Return@<|
-        "ContentType" -> "application/vnd.aws.lambda.error+json",
-        "Headers" -> <|
-            "Lambda-Runtime-Function-Error-Type" -> failureTag
-        |>,
-        "Body" -> ExportByteArray[<|
-            "errorType" -> failureTag,
-            "errorMessage" -> ToString@Replace[
-                failure["Message"],
-                Except[_String] -> "An unknown failure occurred."
-            ]
-        |>, "RawJSON"]
-    |>
-]
-
-
-(* ::Subsection:: *)
-(* errorResponseToFailure - convert a JSON error response to a Failure *)
-
-errorResponseToFailure[response_HTTPResponse] := Module[{
-    errorData = Replace[
-        Quiet@ImportByteArray[response["BodyByteArray"], "RawJSON"],
-
-        (* handle a failed parse *)
-        Except[_Association] -> <|
-            "errorMessage" -> Replace[
-                StringTrim[response["Body"]],
-                ("" | Except[_String]) -> "Unknown error"
-            ],
-            "errorType" -> "UnknownError"
-        |>
-    ]
-},
-    Return@Failure[
-        Lookup[errorData, "errorType", "UnknownError"],
-        <|
-            "MessageTemplate" -> "`message` (code `code`)",
-            "MessageParameters" -> <|
-                "message" -> Lookup[errorData, "errorMessage", "Unknown error"],
-                "code" -> response["StatusCode"]
-            |>,
-            "StatusCode" -> response["StatusCode"]
-        |>
-    ]
-]
-
-(* ::Subsection:: *)
-(* handleAPIResponseError - catch error responses based on status code; pass through success *)
-
-handleAPIResponseError[response_HTTPResponse] := Switch[
-    response["StatusCode"],
-
-    _Integer?(Between[{200, 299}]),
-        Return[response],
-    
-    (* per API spec: "Container error. Non-recoverable state.
-        Runtime should exit promptly." *)
-    500,
-        Print@StringTemplate[
-            "RUNTIME ERROR: Non-recoverable container error (code `1`)"
-        ][response["StatusCode"]];
-        If[
-            (* if there's a nonempty response body *)
-            StringLength[response["Body"]] > 0,
-            (* then print it *)
-            Print[response["Body"]]
-        ];
-        Exit[42],
-
-    400 | 403 | 413,
-        Return[errorResponseToFailure[response]],
-    
-    _,
-        Return@Failure["UnknownStatusCode", <|
-            "MessageTemplate" -> "Unknown response status code `1`",
-            "MessageParameters" -> {response["StatusCode"]}
-        |>]
-]
-
-(* Failure from URLRead *)
-handleAPIResponseError[failure_Failure] := failure
-
-(* ::Subsection:: *)
-(* withCleanContext - evaluate an expression with clean $Context and $ContextPath *)
-
-SetAttributes[withCleanContext, HoldFirst]
-withCleanContext[expr_] := Block[{
-    $Context = "Global`",
-    $ContextPath = {"System`", "Global`"}
-},
-    expr
-]
 
 End[]
 
