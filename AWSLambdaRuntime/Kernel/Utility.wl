@@ -50,7 +50,8 @@ AWSLambdaRuntime`Utility`ProxyFormatToHTTPRequest[
     proxyRequestData_Association
 ] := Module[{
     headers,
-    lowerHeaders
+    lowerHeaders,
+    queryParameters
 },
     (* flatten out multi-value headers with Thread *)
     headers = Normal@Join[
