@@ -109,7 +109,7 @@ AWSLambdaRuntime`Modes`EvaluateHandler[
         httpRequest[{
             "Method",
             "Scheme", "User", "Domain", "Port", "PathString", "QueryString", "Fragment",
-            "MultipartElements", "Cookies",
+            "Cookies",
             "BodyByteArray"
         }],
 
@@ -117,6 +117,22 @@ AWSLambdaRuntime`Modes`EvaluateHandler[
 
         (* avoid the auto-inserted user-agent header in "Headers" *)
         "Headers" -> httpRequest["RawHeaders"],
+
+        "MultipartElements" -> Switch[
+            ToLowerCase[httpRequest["ContentType"]],
+
+            "application/x-www-form-urlencoded",
+                Replace[
+                    URLQueryDecode@ByteArrayToString[httpRequest["BodyByteArray"]],
+                    Except[{__Rule}] -> {}
+                ] // Map@Apply[#1 -> <|
+                    "ContentString" -> #2,
+                    "InMemory" -> True
+                |> &],
+
+            _,
+                None
+        ],
 
         "RequesterAddress" -> requesterIPAddress,
         "SessionID" -> apiGatewayRequestID,
