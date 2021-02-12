@@ -156,6 +156,8 @@ If[
         "/api" -> APIFunction["x" -> "String"],
         "/form" :> FormFunction["x" -> "String"],
         "/image" -> Delayed[RandomImage[], "PNG"],
+        "/error" -> HTTPErrorResponse[500],
+        "/redirect" -> HTTPRedirect["https://wolfram.com"],
 
         StringExpression[
             "/power/",
@@ -173,6 +175,8 @@ If[
                 "<a href=\"api\">/api</a>, ",
                 "<a href=\"form\">/form</a>, ",
                 "<a href=\"image\">/image</a>, ",
+                "<a href=\"error\">/error</a>, ",
+                "<a href=\"redirect\">/redirect</a>, ",
                 "<a href=\"power/42^24\">/power/42^24</a>",
                 "<br/><br/>",
                 "Here is the current HTTPRequestData[]:<br/>",
