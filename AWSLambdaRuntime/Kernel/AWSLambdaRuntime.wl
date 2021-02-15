@@ -216,6 +216,10 @@ loadHandler[] := Module[{
 (* ::Subsubsection:: *)
 (* Sanitize/validate the return value from a handler file *)
 
+sanitizeHandler[
+    ExternalBundle[items:(_Association | {Rule[_String, _]..}), ___]
+] := sanitizeHandler[items]
+
 sanitizeHandler[rules:{__Rule}] := sanitizeHandler[<|rules|>]
 
 sanitizeHandler[assoc_Association?(And[
