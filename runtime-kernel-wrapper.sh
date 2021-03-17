@@ -1,16 +1,16 @@
 #!/bin/sh
 
 export MATHEMATICA_USERBASE="/tmp/home/.WolframEngine"
-#export HOME="/tmp/home"
+export MATHEMATICAPLAYER_USERBASE="/tmp/home/.WolframEngine"
+export WOLFRAM_CACHEBASE="/tmp/home/.cache/Wolfram"
+export WOLFRAM_LOG_DIRECTORY="/tmp/home/.Wolfram/Logs"
 
 # change the home directory (and other things) to /tmp/home
-WL_INIT_DIRECTORIES='Print["Start of -runfirst ", DateList[]];'\
-'Developer`ConfigureUser[None, "/tmp/home"];'\
+WL_INIT_DIRECTORIES='Developer`ConfigureUser[None, "/tmp/home"];'\
 'Unprotect[$HomeDirectory, $UserDocumentsDirectory, $WolframDocumentsDirectory];'\
 '$UserDocumentsDirectory = $HomeDirectory = HomeDirectory[];'\
 '$WolframDocumentsDirectory = FileNameJoin[{$HomeDirectory, "WolframDocuments"}];'\
-'Protect[$HomeDirectory, $UserDocumentsDirectory, $WolframDocumentsDirectory];'\
-'Print["End of -runfirst ", DateList[]];'
+'Protect[$HomeDirectory, $UserDocumentsDirectory, $WolframDocumentsDirectory];'
 
 # launch the runtime
 WL_RUNTIME_START='Print["Start of -run (before Get) ", DateList[]];'\
@@ -26,10 +26,3 @@ exec /usr/local/bin/WolframKernel \
   -noinit \
   -runfirst "$WL_INIT_DIRECTORIES" \
   -run "$WL_RUNTIME_START"
-
-
-#export WOLFRAMSCRIPT_CONFIGURATIONPATH="/tmp/home/.config/Wolfram/WolframScript/WolframScript.conf"
-#export WOLFRAMINIT="-nopaclet"
-#exec /usr/bin/wolframscript \
-#  -debug \
-#  -code "$WL_RUNTIME_START"
