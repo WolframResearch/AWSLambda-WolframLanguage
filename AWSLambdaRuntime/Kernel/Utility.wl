@@ -92,7 +92,7 @@ AWSLambdaRuntime`Utility`ProxyFormatToHTTPRequest[
             ],
             "Port" -> None,
             "Path" -> SelectFirst[
-                (* try to get the domain from requestContext.path first
+                (* try to get the path from requestContext.path first
                     (it includes the stage name if applicable) *)
                 {
                     proxyRequestData["requestContext", "path"],
