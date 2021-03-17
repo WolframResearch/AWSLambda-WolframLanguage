@@ -109,7 +109,6 @@ If[
             "$AWSLambdaHandlerName" -> $AWSLambdaHandlerName,
             "$AWSLambdaHandlerMode" -> $AWSLambdaHandlerMode,
             "$AWSLambdaContextData" -> $AWSLambdaContextData,
-            "$AWSLambdaRawRequestMetadata" -> $AWSLambdaRawRequestMetadata,
             "ContextInfo" -> <|
                 "$Context" -> $Context,
                 "$ContextPath" -> $ContextPath,
@@ -146,16 +145,26 @@ If[
         AppearanceRules -> <|
             "Title" -> "Welcome to Wolfram Web Engine for AWS Lambda",
             "Description" -> TemplateApply[
-                "This is a sample application running on a `` kernel.",
+                "This is a sample application running on version `` of the Wolfram Engine.",
                 $VersionNumber
             ]
         |>
     ],
 
     "http-dispatcher" -> URLDispatcher[{
-        "/api" -> APIFunction["x" -> "String"],
-        "/form" :> FormFunction["x" -> "String"],
-        "/image" -> Delayed[RandomImage[], "PNG"],
+        "/api" -> APIFunction[{
+            "digits" -> "Integer" -> 50,
+            "base" -> "Integer" -> 10
+        }, <|
+            "digits" -> RealDigits[Pi, #base, #digits][[1]]
+        |> &],
+
+        "/form" :> FormFunction[
+            "country" -> "Country",
+            GeoGraphics[#country] &
+        ],
+
+        "/image" -> Delayed[RandomEntity["Pokemon"]["Image"], "PNG"],
         "/error" -> HTTPErrorResponse[500],
         "/redirect" -> HTTPRedirect["https://wolfram.com"],
 
@@ -170,9 +179,11 @@ If[
         ],
 
         "/" -> Delayed@ExportForm[
-            StringJoin@{
-                "Hello! I am a URLDispatcher. Try one of these links: ",
-                "<a href=\"api\">/api</a>, ",
+            TemplateApply@StringJoin@{
+                "Hello! I am a URLDispatcher running in version ",
+                "<* $VersionNumber *> of the Wolfram Engine. ",
+                "Try one of these links: ",
+                "<a href=\"api?digits=50&base=10\">/api</a>, ",
                 "<a href=\"form\">/form</a>, ",
                 "<a href=\"image\">/image</a>, ",
                 "<a href=\"error\">/error</a>, ",
@@ -180,13 +191,9 @@ If[
                 "<a href=\"power/42^24\">/power/42^24</a>",
                 "<br/><br/>",
                 "Here is the current HTTPRequestData[]:<br/>",
-                "<code>",
-                ToString[HTTPRequestData[], InputForm],
-                "</code><br/>",
+                "<code><* ToString[HTTPRequestData[], InputForm] *></code><br/>",
                 "And the $HTTPRequest:<br/>",
-                "<code>",
-                ToString[$HTTPRequest, InputForm],
-                "</code>"
+                "<code><* ToString[$HTTPRequest, InputForm] *></code>"
             },
             "HTML"
         ]
