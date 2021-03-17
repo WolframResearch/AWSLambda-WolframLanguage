@@ -36,32 +36,26 @@ AWSLambdaRuntime`Modes`ValidateHandler[
 
 AWSLambdaRuntime`Modes`EvaluateHandler[
     "Raw",
-    handler_APIFunction,
+    originalHandler_APIFunction,
     requestBody_,
     requestContextData_
 ] := Module[{
+    handler = originalHandler,
     handlerOutput,
     outputSpec
 },
-    handlerOutput = AWSLambdaRuntime`Utility`WithCleanContext[
-        handler[requestBody]
+    (* move output form from the third argument of APIFunction to
+        an ExportForm wrapper inside the function *)
+    handler = Replace[
+        handler,
+        APIFunction[params_, fun_, fmt_String] :> APIFunction[
+            params,
+            fun /* (ExportForm[#, fmt] &)
+        ]
     ];
 
-    If[
-        (* if the APIFunction indicates an output form *)
-        Length[handler] >= 3,
-        (* then wrap the output appropriately *)
-        outputSpec = handler[[3]];
-        handlerOutput = Switch[outputSpec,
-            _String,
-                handlerOutput = ExportForm[
-                    handlerOutput,
-                    outputSpec
-                ],
-            
-            _, (* unknown/unsuported third-argument format *)
-                handlerOutput
-        ]
+    handlerOutput = AWSLambdaRuntime`Utility`WithCleanContext[
+        handler[requestBody]
     ];
 
     Return[handlerOutput]
