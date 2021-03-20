@@ -155,9 +155,12 @@ If[
         "/api" -> APIFunction[{
             "digits" -> "Integer" -> 50,
             "base" -> "Integer" -> 10
-        }, <|
-            "digits" -> RealDigits[Pi, #base, #digits][[1]]
-        |> &],
+        },
+            ExportForm[
+                <|"digits" -> First@RealDigits[Pi, #base, #digits]|>,
+                "JSON"
+            ] &
+        ],
 
         "/form" :> FormFunction[
             "country" -> "Country",
