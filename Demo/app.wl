@@ -164,6 +164,19 @@ If[
             GeoGraphics[#country] &
         ],
 
+        "/image-form" :> FormFunction[
+            {"image" -> "Image", "filter" -> ImageEffect[]}, 
+            ImageEffect[#image, #filter] &,
+            "PNG",
+            AppearanceRules -> <|
+                "Title" -> "Welcome to Wolfram Web Engine for AWS Lambda",
+                "Description" -> TemplateApply[
+                    "This is a sample application running on version `` of the Wolfram Engine.",
+                    $VersionNumber
+                ]
+            |>
+        ],
+
         "/image" -> Delayed[RandomEntity["Pokemon"]["Image"], "PNG"],
         "/error" -> HTTPErrorResponse[500],
         "/redirect" -> HTTPRedirect["https://wolfram.com"],
@@ -186,6 +199,7 @@ If[
                 "<a href=\"api?digits=50&base=10\">/api</a>, ",
                 "<a href=\"form\">/form</a>, ",
                 "<a href=\"image\">/image</a>, ",
+                "<a href=\"image-form\">/image-form</a>, ",
                 "<a href=\"error\">/error</a>, ",
                 "<a href=\"redirect\">/redirect</a>, ",
                 "<a href=\"power/42^24\">/power/42^24</a>",

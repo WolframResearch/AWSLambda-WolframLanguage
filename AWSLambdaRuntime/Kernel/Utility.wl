@@ -51,7 +51,8 @@ AWSLambdaRuntime`Utility`ProxyFormatToHTTPRequest[
 ] := Module[{
     headers,
     lowerHeaders,
-    queryParameters
+    queryParameters,
+    requestBody
 },
     (* flatten out multi-value headers with Thread *)
     headers = Normal@Join[
@@ -65,6 +66,14 @@ AWSLambdaRuntime`Utility`ProxyFormatToHTTPRequest[
         Lookup[proxyRequestData, "queryStringParameters", <||>, Replace[Null -> <||>]],
         Lookup[proxyRequestData, "multiValueQueryStringParameters", <||>, Replace[Null -> <||>]]
     ] // Map[Thread] // Flatten;
+
+    requestBody = proxyRequestData["body"] // Replace[Except[_String] -> ""];
+    If[
+        (* if the request body is Base64-encoded *)
+        TrueQ[proxyRequestData["isBase64Encoded"]] && StringLength[requestBody] > 0,
+        (* then decode it to a ByteArray *)
+        requestBody = BaseDecode[requestBody]
+    ];
 
     Return@HTTPRequest[
         <|
@@ -107,14 +116,7 @@ AWSLambdaRuntime`Utility`ProxyFormatToHTTPRequest[
             "HTTPVersion" -> "1.1", (* TODO: try to get from requestContext.protocol or Via header *)
             "Method" -> Lookup[proxyRequestData, "httpMethod", None],
             "Headers" -> headers,
-            "Body" -> If[
-                (* if the request body is Base64-encoded *)
-                TrueQ[proxyRequestData["isBase64Encoded"]],
-                (* then decode it to a ByteArray *)
-                BaseDecode[proxyRequestData["body"]],
-                (* else keep it as a string *)
-                proxyRequestData["body"]
-            ]
+            "Body" -> requestBody
         |>
     ]
 ]
