@@ -1,5 +1,5 @@
 FROM wolframresearch/aws-lambda-wolframlanguage:latest
 
-COPY app.wl /var/task/app.wl
+COPY *.wl /var/task/
 
 CMD ["app.func1"]
