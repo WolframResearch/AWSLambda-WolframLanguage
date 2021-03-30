@@ -27,7 +27,7 @@ AWSLambdaRuntime`API`GetNextInvocation[] := Module[{
         request,
         TimeConstraint -> Infinity
     ];
-    Echo[response, "received"];
+    Echo[response, {DateList[], "received"}];
 
     If[
         (* if the request failed *)
@@ -60,10 +60,10 @@ AWSLambdaRuntime`API`SendInvocationResponse[
         "Path" -> {"runtime/invocation", requestID, "response"},
         "Body" -> data
     |>];
-    Echo[request, "sending"];
+    Echo[request, {DateList[], "sending"}];
 
     response = handleAPIResponseError@URLRead[request];
-    Echo[response, "received"];
+    Echo[response, {DateList[], "received"}];
 
     If[
         FailureQ[response],
@@ -198,10 +198,10 @@ AWSLambdaRuntime`API`SendInvocationError[
         "Path" -> {"runtime/invocation", requestID, "error"},
         failureToErrorRequest[failure]
     |>];
-    Echo[request, "sending"];
+    Echo[request, {DateList[], "sending"}];
 
     response = handleAPIResponseError@URLRead[request];
-    Echo[response, "received"];
+    Echo[response, {DateList[], "received"}];
 
     If[
         FailureQ[response],
@@ -224,9 +224,9 @@ AWSLambdaRuntime`API`ExitWithInitializationError[
         "Path" -> "runtime/init/error",
         failureToErrorRequest[failure]
     |>];
-    Echo[request, "sending"];
+    Echo[request, {DateList[], "sending"}];
     response = handleAPIResponseError@URLRead[request];
-    Echo[response, "received"];
+    Echo[response, {DateList[], "received"}];
     Exit[41]
 ]
 
