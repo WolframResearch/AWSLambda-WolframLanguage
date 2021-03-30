@@ -5,6 +5,8 @@ If[
     $AWSLambdaHandlerMode = "HTTP"
 ]
 
+UsingFrontEnd[Print["Launched frontend"]]
+
 
 <|
 
@@ -139,9 +141,9 @@ If[
 
     "http-squared" -> APIFunction["x" -> "Number", #x^2 &],
 
-    "http-form" :> FormFunction["x" -> "String"],
+    "http-form" -> FormFunction["x" -> "String"],
     "http-image" -> Delayed[RandomImage[], "PNG"],
-    "http-image-form" :> FormFunction[
+    "http-image-form" -> FormFunction[
         {"image" -> "Image", "filter" -> ImageEffect[]}, 
         ImageEffect[#image, #filter] &,
         "PNG",
@@ -165,12 +167,12 @@ If[
             ] &
         ],
 
-        "/form" :> FormFunction[
+        "/form" -> FormFunction[
             "country" -> "Country",
             GeoGraphics[#country] &
         ],
 
-        "/image-form" :> FormFunction[
+        "/image-form" -> FormFunction[
             {"image" -> "Image", "filter" -> ImageEffect[]}, 
             ImageEffect[#image, #filter] &,
             "PNG",
