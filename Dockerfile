@@ -9,7 +9,6 @@ ENV LAMBDA_RUNTIME_DIR=/var/runtime
 ADD https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/latest/download/aws-lambda-rie /usr/local/bin/aws-lambda-rie
 RUN chmod +x /usr/local/bin/aws-lambda-rie
 
-COPY MimeticLink /usr/share/WolframEngine/Applications/MimeticLink
 COPY AWSLambdaRuntime /usr/share/WolframEngine/Applications/AWSLambdaRuntime
 
 COPY runtime-entrypoint.sh /runtime-entrypoint.sh
