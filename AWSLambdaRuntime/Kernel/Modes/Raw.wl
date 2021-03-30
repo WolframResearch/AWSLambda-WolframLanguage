@@ -10,50 +10,23 @@ Needs["AWSLambdaRuntime`API`"]
 (* ::Section:: *)
 (* Validate handler (called during initialization) *)
 
-(* valid *)
+(* any expression is considered valid (it will be called as a function) *)
 AWSLambdaRuntime`Modes`ValidateHandler[
     "Raw",
-    handler_APIFunction
+    handler_
 ] := Success["Valid", <||>]
-
-(* invalid *)
-AWSLambdaRuntime`Modes`ValidateHandler[
-    "Raw",
-    handler_ (* not APIFunction *)
-] := Failure[
-    "InvalidHandler",
-    <|
-        "MessageTemplate" -> StringJoin[{
-            "The handler expression with head `1` is not an APIFunction ",
-            "expression"
-        }],
-        "MessageParameters" -> {Head[handler]}
-    |>
-]
 
 (* ::Section:: *)
 (* Evaluate handler *)
 
 AWSLambdaRuntime`Modes`EvaluateHandler[
     "Raw",
-    originalHandler_APIFunction,
+    handler_,
     requestBody_,
     requestContextData_
 ] := Module[{
-    handler = originalHandler,
-    handlerOutput,
-    outputSpec
+    handlerOutput
 },
-    (* move output form from the third argument of APIFunction to
-        an ExportForm wrapper inside the function *)
-    handler = Replace[
-        handler,
-        APIFunction[params_, fun_, fmt_String] :> APIFunction[
-            params,
-            fun /* (ExportForm[#, fmt] &)
-        ]
-    ];
-
     handlerOutput = AWSLambdaRuntime`Utility`WithCleanContext[
         handler[requestBody]
     ];

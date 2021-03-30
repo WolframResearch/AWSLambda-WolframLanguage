@@ -285,12 +285,13 @@ processInvocation[
 
     If[
         (* if the request didn't parse *)
-        !AssociationQ[requestBody],
+        FailureQ[requestBody],
         (* then emit an error and return to the main loop *)
         AWSLambdaRuntime`API`SendInvocationError[
             requestID,
             Failure["InvocationParseFailure", <|
-                "MessageTemplate" -> "Failed to parse request payload as JSON"
+                "MessageTemplate" -> "Failed to parse request payload as JSON",
+                "ImportResult" -> requestBody
             |>]
         ];
         Return[]

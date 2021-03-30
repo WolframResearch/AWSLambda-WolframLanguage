@@ -30,7 +30,7 @@ If[
         <|"quotient" -> #dividend / #divisor|>
     ] &],
 
-    "factor" -> APIFunction[{"x" -> "Integer"}, FactorInteger[#x] &],
+    "factor" -> (FactorInteger[#x] &),
 
     "randomImage" -> APIFunction[
         {"max" -> "Real" -> 1},
@@ -38,9 +38,10 @@ If[
         "PNG"
     ],
 
-    "numberImage" -> APIFunction[{
-        "number" -> "Real"
-    }, ExportForm[Rasterize[#number, RasterSize -> 100], "PNG"] &],
+    "rasterize" -> (ExportByteArray[
+        Rasterize[#input, RasterSize -> 100],
+        "PNG"
+    ] &),
 
     "countryPopulation" -> APIFunction[{
         "country" -> "Country",
@@ -54,8 +55,10 @@ If[
 
     "countryMap" -> APIFunction[
         "country" -> "Country",
-        GeoGraphics[Polygon[#country]] &,
-        "PNG"
+        ExportByteArray[
+            GeoGraphics[Polygon[#country]],
+            "PNG"
+        ] &
     ],
 
     "stockPrice" -> APIFunction[
