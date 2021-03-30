@@ -214,6 +214,8 @@ httpRequestIsMultipartQ[request_HTTPRequest] := TrueQ@And[
 parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
     requestHeaderBytes,
     parsedBody,
+    childParts,
+    defaultEncoding,
     multipartElements
 },
     If[
@@ -254,9 +256,15 @@ parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
         Return[None]
     ];
 
+    childParts = Lookup[parsedBody, "ChildParts", {}];
+    defaultEncoding = getFormDataDefaultEncoding[childParts];
+
     multipartElements = Select[
-        parseMultipartFormElement /@ Lookup[parsedBody, "ChildParts", {}],
-        AssociationQ
+        parseMultipartFormElement[
+            #,
+            "DefaultCharacterEncoding" -> Replace[defaultEncoding, Except[_String] -> None]
+        ] & /@ childParts,
+        AssociationQ (* parseMultipartFormElement returns None if the element is unusable or irrelevant *)
     ];
 
     (* convert from list of associations into the format GenerateHTTPResponse expects *)
@@ -265,10 +273,41 @@ parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
     Return[multipartElements]
 ]
 
+
+(* ::Subsubsection:: *)
+(* getFormDataDefaultEncoding - get the encoding of a form's fields as indicated by the "_charset_" field *)
+
+getFormDataDefaultEncoding[bodyParts_List] := Module[{
+    charsetPart = SelectFirst[
+        bodyParts,
+        And[
+            #["ContentDisposition", "Parameters", "name"] === "_charset_",
+            !StringQ[#["ContentDisposition", "Parameters", "filename"]], (* field is form field *)
+            Length[#BodyByteArray] < 50 (* not unexpectedly long *)
+        ] &,
+        None
+    ],
+    charsetString,
+    characterEncodingString
+},
+    If[
+        !AssociationQ[charsetPart],
+        Return[None]
+    ];
+
+    charsetString = ByteArrayToString[charsetPart["BodyByteArray"], "ISO8859-1"];
+    characterEncodingString = CloudObject`ToCharacterEncoding[charsetString, None];
+
+    Return@Replace[characterEncodingString, Except[_String] -> None]
+]
+
+
 (* ::Subsubsection:: *)
 (* parseMultipartFormElement - parse one MIME entity representing a form field *)
 
-parseMultipartFormElement[rawEntity_Association] := Module[{
+Options[parseMultipartFormElement] = {"DefaultCharacterEncoding" -> None}
+
+parseMultipartFormElement[rawEntity_Association, OptionsPattern[]] := Module[{
     contentType = Lookup[rawEntity, "ContentType", <||>, Replace[_Missing -> <||>]],
     dispositionParameters = Lookup[
         Lookup[rawEntity, "ContentDisposition", <||>],
@@ -276,9 +315,12 @@ parseMultipartFormElement[rawEntity_Association] := Module[{
         <||>
     ],
     fieldName,
-    elementData,
+    originalFileName,
+    isFormField,
     bodyByteArray,
-    originalFileName
+    contentTypeEncoding,
+    bodyString,
+    elementData
 },
 
     fieldName = dispositionParameters["name"];
@@ -290,16 +332,40 @@ parseMultipartFormElement[rawEntity_Association] := Module[{
     ];
 
     originalFileName = Lookup[dispositionParameters, "filename", None];
+    isFormField = !StringQ[originalFileName];
+
     bodyByteArray = Lookup[rawEntity, "BodyByteArray", {}];
+
+    If[
+        (* if the part is a form field (rather than an uploaded file) *)
+        isFormField,
+
+        (* then look for an indicated charset and use it to decode the body *)
+        contentTypeEncoding = Lookup[
+            Lookup[contentType, "Parameters", <||>],
+            "charset",
+            OptionValue["DefaultCharacterEncoding"],
+            CloudObject`ToCharacterEncoding[#, None] &
+        ];
+
+        If[
+            (* if an encoding was specified *)
+            StringQ[contentTypeEncoding],
+            (* then try to decode the body *)
+            bodyString = ByteArrayToString[bodyByteArray, contentTypeEncoding];
+        ];
+    ];
 
     (* TODO: support writing bodies above some configurable threshold to temp files *)
     elementData = <|
-        "ContentString" -> bodyByteArray,
+        (* if a string was decoded, then use it; otherwise use the raw ByteArray *)
+        "ContentString" -> If[StringQ[bodyString], bodyString, bodyByteArray],
+
         "FieldName" -> fieldName,
         "ContentType" -> Lookup[contentType, "Raw", None],
         "OriginalFileName" -> originalFileName,
         "ByteCount" -> Length[bodyByteArray],
-        "FormField" -> !StringQ[originalFileName],
+        "FormField" -> isFormField,
         "InMemory" -> True
     |>;
 
