@@ -1,4 +1,4 @@
-BeginPackage["AWSLambdaRuntime`Modes`Raw`"]
+BeginPackage["AWSLambdaRuntime`Modes`HTTP`"]
 
 AWSLambdaRuntime`Modes`ValidateHandler
 AWSLambdaRuntime`Modes`EvaluateHandler
@@ -8,7 +8,13 @@ Begin["`Private`"]
 Needs["AWSLambdaRuntime`API`"]
 Needs["AWSLambdaRuntime`Utility`"]
 
-Needs["MimeticLink`"]
+(* ::Section:: *)
+(* Initialize mode implementation (load dependencies) *)
+
+AWSLambdaRuntime`Modes`InitializeMode["HTTP"] := (
+    Needs["Forms`"];
+    Needs["MimeticLink`"];
+)
 
 (* ::Section:: *)
 (* Validate handler (called during initialization) *)

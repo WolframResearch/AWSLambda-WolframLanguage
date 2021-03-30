@@ -11,9 +11,7 @@ Get["AWSLambdaRuntime`Modes`Raw`"]
 invalidModeFailure := Failure[
     "InvalidHandlerMode",
     <|
-        "MessageTemplate" -> StringJoin[{
-            "The handler mode `1` is not valid"
-        }],
+        "MessageTemplate" -> "The handler mode `1` is not valid",
         "MessageParameters" -> {AWSLambdaRuntime`Handler`$AWSLambdaHandlerMode}
     |>
 ]

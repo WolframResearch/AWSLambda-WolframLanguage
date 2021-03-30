@@ -7,7 +7,6 @@ Begin["`Private`"]
 Block[{$ContextPath},
     Needs["CloudObject`"];
     Needs["CURLLink`"];
-    Needs["Forms`"];
 ]
 
 Needs["AWSLambdaRuntime`API`"]
@@ -63,6 +62,13 @@ AWSLambdaRuntime`StartRuntime[] := Module[{
         FailureQ[handler],
         (* then emit an error and exit *)
         AWSLambdaRuntime`API`ExitWithInitializationError[handler]
+    ];
+
+    (* perform initialization steps like loading dependencies *)
+    Block[{$ContextPath},
+        AWSLambdaRuntime`Modes`InitializeMode[
+            AWSLambdaRuntime`Handler`$AWSLambdaHandlerMode
+        ];
     ];
 
     validateResult = AWSLambdaRuntime`Modes`ValidateHandler[

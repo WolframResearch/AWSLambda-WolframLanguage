@@ -8,6 +8,11 @@ Begin["`Private`"]
 Needs["AWSLambdaRuntime`API`"]
 
 (* ::Section:: *)
+(* Initialize mode implementation (load dependencies) *)
+
+AWSLambdaRuntime`Modes`InitializeMode["Raw"] := Null (* nothing currently needed here *)
+
+(* ::Section:: *)
 (* Validate handler (called during initialization) *)
 
 (* any expression is considered valid (it will be called as a function) *)
