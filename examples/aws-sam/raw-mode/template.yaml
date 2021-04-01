@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Example AWS SAM app using the Wolfram Language Lambda runtime
+  with a raw-mode function
+
+Parameters:
+  OnDemandLicenseEntitlementID:
+    Type: String
+    NoEcho: true
+    Description: >
+      The ID of a Wolfram on-demand license entitlement to use to
+      activate the Wolfram Engine within your function container(s).
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        WOLFRAMSCRIPT_ENTITLEMENTID: !Ref OnDemandLicenseEntitlementID
+
+Resources:
+  ExampleRawFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerContext: ./example-raw-function
+    Properties:
+      PackageType: Image
+      ImageConfig:
+        # This corresponds to the single handler inside
+        # "raw-handler-file.wl" in the build context folder.
+        # This setting overrides any `CMD` instruction in the Dockerfile.
+        Command: ["raw-handler-file"]
+      Environment:
+        Variables:
+          # This is not strictly necessary, as raw mode is the default.
+          # Handler mode can also be configured in the handler file via the
+          # $AWSLambdaHandlerMode variable.
+          WOLFRAM_LAMBDA_HANDLER_MODE: Raw
+
+Outputs:
+  ExampleRawFunction:
+    Description: Example raw-mode Lambda function
+    Value: !GetAtt ExampleRawFunction.Arn
+  ExampleRawFunctionRole:
+    Description: Implicit IAM role created for example raw-mode function
+    Value: !GetAtt ExampleRawFunctionRole.Arn

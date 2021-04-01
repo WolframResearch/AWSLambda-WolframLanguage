@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Example AWS SAM app using the Wolfram Language Lambda runtime
+  with an HTTP-mode function connected to an API Gateway API
+
+Parameters:
+  OnDemandLicenseEntitlementID:
+    Type: String
+    NoEcho: true
+    Description: >
+      The ID of a Wolfram on-demand license entitlement to use to
+      activate the Wolfram Engine within your function container(s).
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        WOLFRAMSCRIPT_ENTITLEMENTID: !Ref OnDemandLicenseEntitlementID
+
+  Api:
+    BinaryMediaTypes:
+      # This tells API Gateway to represent HTTP request and response bodies
+      # as Base64-encoded binary data instead of as plain text. This is necessary
+      # in order for requests and responses containing binary data (e.g. images)
+      # to work. If you disable this, then you should instruct the Wolfram
+      # Language Lambda runtime to skip encoding responses to Base64. You can do
+      # this by setting the WOLFRAM_LAMBDA_HTTP_USE_PLAIN_TEXT_RESPONSE
+      # environment variable to 1 in the function configuration, or by setting
+      # the $AWSLambdaUsePlainTextResponse Wolfram Language variable to True
+      # in your handler file.
+      - "*/*"
+
+Resources:
+  ExampleHTTPFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerContext: ./example-http-function
+    Properties:
+      PackageType: Image
+      ImageConfig:
+        # This corresponds to the single handler inside
+        # "http-handler-file.wl" in the build context folder.
+        # This setting overrides any `CMD` instruction in the Dockerfile.
+        Command: ["http-handler-file"]
+      Environment:
+        Variables:
+          # Handler mode can also be configured in the handler file via the
+          # $AWSLambdaHandlerMode variable.
+          WOLFRAM_LAMBDA_HANDLER_MODE: HTTP
+      Events:
+        ExampleURLDispatcherRoot:
+          Type: Api
+          Properties:
+            # This matches requests to the "root" of the API (e.g. /Prod/).
+            Path: /
+            Method: any
+        ExampleURLDispatcherProxy:
+          Type: Api
+          Properties:
+            # This matches requests to URLs under the "root" (e.g./Prod/foo).
+            Path: /{proxy+}
+            Method: any
+
+      # This instructs SAM to automatically assign the alias "Deployed"
+      # to new versions of the function, and to configure that alias with
+      # one unit of provisioned concurrency.
+      AutoPublishAlias: Deployed
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrentExecutions: 1
+
+Outputs:
+  ExampleHTTPFunction:
+    Description: Example HTTP-mode Lambda function
+    Value: !GetAtt ExampleHTTPFunction.Arn
+  ExampleHTTPFunctionRole:
+    Description: Implicit IAM role created for example HTTP-mode function
+    Value: !GetAtt ExampleHTTPFunctionRole.Arn
+
+  # ServerlessRestApi is an implicit API created out of Events keys under Serverless::Function.
+  # Find out more about other implicit resources you can reference within SAM:
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  ExampleHTTPFunctionAPI:
+    Description: API Gateway endpoint URL for Prod stage for example HTTP-based function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
