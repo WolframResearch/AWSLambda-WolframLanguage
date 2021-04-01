@@ -7,10 +7,10 @@ AWSLambdaRuntime`Utility`WithCleanContext
 
 Begin["`Private`"]
 
-AWSLambdaRuntime`Handler`$AWSLambdaUseBinaryResponse = Lookup[
+AWSLambdaRuntime`Handler`$AWSLambdaUsePlainTextResponse = Lookup[
     GetEnvironment[],
-    "WOLFRAM_LAMBDA_HTTP_USE_BINARY_RESPONSE"
-] =!= "0"
+    "WOLFRAM_LAMBDA_HTTP_USE_PLAIN_TEXT_RESPONSE"
+] === "1"
 
 (* ::Subsection:: *)
 (* WithCleanContext - evaluate an expression with clean $Context and $ContextPath *)
@@ -150,17 +150,17 @@ AWSLambdaRuntime`Utility`HTTPResponseToProxyFormat[
         "multiValueHeaders" -> GroupBy[headers, First -> Last],
 
         If[
-            TrueQ@AWSLambdaRuntime`Handler`$AWSLambdaUseBinaryResponse,
+            TrueQ@AWSLambdaRuntime`Handler`$AWSLambdaUsePlainTextResponse,
+            <|
+                "body" -> ByteArrayToString[bodyByteArray],
+                "isBase64Encoded" -> False
+            |>,
             <|
                 "body" -> Replace[bodyByteArray, {
                     ba_ByteArray :> BaseEncode[ba],
                     {} -> ""
                 }],
                 "isBase64Encoded" -> True
-            |>,
-            <|
-                "body" -> ByteArrayToString[bodyByteArray],
-                "isBase64Encoded" -> False
             |>
         ]
     |>

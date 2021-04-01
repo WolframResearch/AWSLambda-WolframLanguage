@@ -11,7 +11,7 @@ echo '---------'
 docker run \
   -p 9000:8080 \
   -e WOLFRAMSCRIPT_ENTITLEMENTID=O-WSDS-B506-4HKBHTL77B4ZW \
-  -e WOLFRAM_LAMBDA_HTTP_USE_BINARY_RESPONSE=0 \
+  -e WOLFRAM_LAMBDA_HTTP_USE_PLAIN_TEXT_RESPONSE=1 \
   --read-only --tmpfs='/tmp' \
   --user=4242 \
   790731757232.dkr.ecr.us-east-1.amazonaws.com/aws-lambda-wolframlanguage-demo:latest \
