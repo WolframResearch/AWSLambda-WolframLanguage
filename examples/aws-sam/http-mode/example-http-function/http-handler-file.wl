@@ -33,7 +33,7 @@ $AWSLambdaHandlerMode = "HTTP"
 *)
 
 URLDispatcher[{
-    (* this is an APIFunction that returns the population of a given country in a given year *)
+    (* This is an APIFunction that returns the population of a given country in a given year. *)
     "/api" -> APIFunction[
         {
             "country" -> "Country",
@@ -48,17 +48,17 @@ URLDispatcher[{
         "JSON"
     ],
 
-    (* this is a FormFunction that applies an effect to an uploaded image *)
+    (* This is a FormFunction that applies an effect to an uploaded image. *)
     "/form" -> FormFunction[
         {"image" -> "Image", "filter" -> ImageEffect[]}, 
         ImageEffect[#image, #filter] &,
         "PNG"
     ],
 
-    (* this is a computed ("delayed") response containing a PNG file *)
+    (* This is a computed ("delayed") response containing a PNG file. *)
     "/image" -> Delayed[RandomEntity["Pokemon"]["Image"], "PNG"],
 
-    (* this is a path-based routing pattern that returns a result based on parameters in the URL *)
+    (* This is a path-based routing pattern that returns a result based on parameters in the URL. *)
     StringExpression[
         "/power/",
         base : Repeated[DigitCharacter, 3],
@@ -68,7 +68,7 @@ URLDispatcher[{
         FromDigits[base] ^ FromDigits[power]
     ),
 
-    (* this is a computed HTML string *)
+    (* This is a computed HTML string. *)
     "/" -> Delayed@ExportForm[
         TemplateApply@StringJoin@{
             "Hello! I am a URLDispatcher running in version ",
