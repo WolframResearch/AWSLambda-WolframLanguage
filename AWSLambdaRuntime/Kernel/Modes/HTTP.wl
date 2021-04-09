@@ -286,7 +286,7 @@ parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
 
     requestParts = MIMETools`MIMEMessageRead[
         mimeMessage,
-        "RawAttachments"
+        "DecodedRawAttachments"
     ];
     MIMETools`MIMEMessageClose[mimeMessage];
     Print[requestParts];
@@ -360,18 +360,18 @@ getFormDataDefaultEncoding[bodyParts_List] := Module[{
 Options[parseMultipartFormElement] = {"DefaultCharacterEncoding" -> None}
 
 parseMultipartFormElement[rawEntity_Association, OptionsPattern[]] := Module[{
-    contentType = Lookup[rawEntity, "Content-Type", <||>],
-    dispositionParameters = Lookup[rawEntity, "Content-Disposition", <||>],
-    fieldName,
-    originalFileName,
-    isFormField,
+    contentType = rawEntity["ContentType"],
+    fieldName = rawEntity["Name"],
+    originalFileName = Lookup[rawEntity, "FileName", None],
+
     bodyByteArray,
+
+    isFormField,
     contentTypeEncoding,
     bodyString,
+
     elementData
 },
-
-    fieldName = dispositionParameters["name"];
     If[
         (* if the required "name" field is missing *)
         !StringQ[fieldName],
@@ -379,13 +379,12 @@ parseMultipartFormElement[rawEntity_Association, OptionsPattern[]] := Module[{
         Return[None]
     ];
 
-    originalFileName = Lookup[dispositionParameters, "filename", None];
-    isFormField = !StringQ[originalFileName];
-
     bodyByteArray = StringToByteArray[
         Lookup[rawEntity, "Contents", ""],
         "ISO8859-1"
     ];
+
+    isFormField = !StringQ[originalFileName];
 
     If[
         (* if the part is a form field (rather than an uploaded file) *)
@@ -413,7 +412,7 @@ parseMultipartFormElement[rawEntity_Association, OptionsPattern[]] := Module[{
         "ContentString" -> If[StringQ[bodyString], bodyString, bodyByteArray],
 
         "FieldName" -> fieldName,
-        "ContentType" -> StringRiffle[Lookup[contentType, {"Type", "Subtype"}], "/"],
+        "ContentType" -> contentType,
         "OriginalFileName" -> originalFileName,
         "ByteCount" -> Length[bodyByteArray],
         "FormField" -> isFormField,
