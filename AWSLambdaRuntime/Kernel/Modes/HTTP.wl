@@ -332,7 +332,7 @@ getFormDataDefaultEncoding[bodyParts_List] := Module[{
             #["Name"] === "_charset_",
             !StringQ[#["FileName"]], (* field is form field, not uploaded file *)
             StringQ[#["Contents"]], (* has a body *)
-            StringLength[#["Contents"]] < 50 (* the body isn't not unexpectedly long *)
+            StringLength[#["Contents"]] < 50 (* the body isn't unexpectedly long *)
         ] &,
         None
     ]
