@@ -264,19 +264,15 @@ parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
         "MessageContentType"
     ] // checkMIMEToolsException;
 
-    Which[
-        (* if we couldn't check the Content-Type *)
-        !StringQ[requestContentType],
-        (* then return None *)
-        MIMETools`MIMEMessageClose[mimeMessage];
-        Return[None],
-
-
-        (* if the request is not multipart *)
-        !TrueQ@StringStartsQ[
-            requestContentType,
-            "multipart",
-            IgnoreCase -> True
+    If[
+        (* if the Content-Type isn't multipart *)
+        Not@And[
+            StringQ[requestContentType],
+            TrueQ@StringStartsQ[
+                requestContentType,
+                "multipart",
+                IgnoreCase -> True
+            ]
         ],
         (* then return None *)
         MIMETools`MIMEMessageClose[mimeMessage];
