@@ -13,7 +13,7 @@ Needs["AWSLambdaRuntime`Utility`"]
 
 AWSLambdaRuntime`Modes`InitializeMode["HTTP"] := (
     Needs["Forms`"];
-    Needs["MimeticLink`"];
+    Needs["MIMETools`"];
 )
 
 (* ::Section:: *)
@@ -213,8 +213,9 @@ httpRequestIsMultipartQ[request_HTTPRequest] := TrueQ@And[
 
 parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
     requestHeaderBytes,
-    parsedBody,
-    childParts,
+    mimeMessage,
+    requestContentType,
+    requestParts,
     defaultEncoding,
     multipartElements
 },
@@ -228,6 +229,7 @@ parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
         Return[None]
     ];
 
+    (* reconstitute the request header so that MIMETools can parse it *)
     requestHeaderBytes = StringToByteArray[
         StringJoin[
             Map[
@@ -241,29 +243,64 @@ parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
         "ISO8859-1"
     ];
 
-    parsedBody = MimeticLink`ParseMIMEByteArray@Join[
-        ByteArray[requestHeaderBytes],
-        request["BodyByteArray"]
-    ];
+    mimeMessage = MIMETools`MIMEMessageOpen[
+        ByteArrayToString[
+            Join[
+                (* prepend the reconstituted header to the request body *)
+                ByteArray[requestHeaderBytes],
+                request["BodyByteArray"]
+            ],
+            "ISO8859-1"
+        ]
+    ] // checkMIMEToolsException;
 
     If[
-        (* if the request is not multipart *)
-        !And[
-            AssociationQ[parsedBody],
-            parsedBody["IsMultipart"] === True
-        ],
+        (* if we couldn't open the message *)
+        Head[mimeMessage] =!= MIMETools`MIMEMessage,
         (* then return None *)
         Return[None]
     ];
 
-    childParts = Lookup[parsedBody, "ChildParts", {}];
-    defaultEncoding = getFormDataDefaultEncoding[childParts];
+    requestContentType = MIMETools`MIMEMessageRead[
+        mimeMessage,
+        "MessageContentType"
+    ] // checkMIMEToolsException;
+
+    If[
+        (* if the Content-Type isn't multipart *)
+        Not@And[
+            StringQ[requestContentType],
+            TrueQ@StringStartsQ[
+                requestContentType,
+                "multipart",
+                IgnoreCase -> True
+            ]
+        ],
+        (* then return None *)
+        MIMETools`MIMEMessageClose[mimeMessage];
+        Return[None]
+    ];
+
+    requestParts = MIMETools`MIMEMessageRead[
+        mimeMessage,
+        "DecodedRawAttachments"
+    ];
+    MIMETools`MIMEMessageClose[mimeMessage];
+
+    If[
+        (* if we couldn't get the body parts *)
+        !ListQ[requestParts],
+        (* then return None *)
+        Return[None]
+    ];
+
+    defaultEncoding = getFormDataDefaultEncoding[requestParts];
 
     multipartElements = Select[
         parseMultipartFormElement[
             #,
             "DefaultCharacterEncoding" -> Replace[defaultEncoding, Except[_String] -> None]
-        ] & /@ childParts,
+        ] & /@ requestParts,
         AssociationQ (* parseMultipartFormElement returns None if the element is unusable or irrelevant *)
     ];
 
@@ -275,30 +312,40 @@ parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
 
 
 (* ::Subsubsection:: *)
+(* checkMIMEToolsException - handle MIMETools exceptions *)
+
+checkMIMEToolsException[exception_MIMETools`MIMEToolsException] := (
+    Print["Runtime encountered MIMETools exception: ", InputForm[exception]];
+    $Failed
+)
+
+checkMIMEToolsException[expr_] := expr
+
+
+(* ::Subsubsection:: *)
 (* getFormDataDefaultEncoding - get the encoding of a form's fields as indicated by the "_charset_" field *)
 
 getFormDataDefaultEncoding[bodyParts_List] := Module[{
     charsetPart = SelectFirst[
         bodyParts,
         And[
-            #["ContentDisposition", "Parameters", "name"] === "_charset_",
-            !StringQ[#["ContentDisposition", "Parameters", "filename"]], (* field is form field *)
-            Length[#BodyByteArray] < 50 (* not unexpectedly long *)
+            #["Name"] === "_charset_",
+            !StringQ[#["FileName"]], (* field is form field, not uploaded file *)
+            StringQ[#["Contents"]], (* has a body *)
+            StringLength[#["Contents"]] < 50 (* the body isn't unexpectedly long *)
         ] &,
         None
-    ],
-    charsetString,
-    characterEncodingString
+    ]
 },
     If[
         !AssociationQ[charsetPart],
         Return[None]
     ];
 
-    charsetString = ByteArrayToString[charsetPart["BodyByteArray"], "ISO8859-1"];
-    characterEncodingString = CloudObject`ToCharacterEncoding[charsetString, None];
-
-    Return@Replace[characterEncodingString, Except[_String] -> None]
+    Return@Replace[
+        CloudObject`ToCharacterEncoding[charsetPart["Contents"], None],
+        Except[_String] -> None
+    ]
 ]
 
 
@@ -308,22 +355,18 @@ getFormDataDefaultEncoding[bodyParts_List] := Module[{
 Options[parseMultipartFormElement] = {"DefaultCharacterEncoding" -> None}
 
 parseMultipartFormElement[rawEntity_Association, OptionsPattern[]] := Module[{
-    contentType = Lookup[rawEntity, "ContentType", <||>, Replace[_Missing -> <||>]],
-    dispositionParameters = Lookup[
-        Lookup[rawEntity, "ContentDisposition", <||>],
-        "Parameters",
-        <||>
-    ],
-    fieldName,
-    originalFileName,
-    isFormField,
+    contentType = rawEntity["ContentType"],
+    fieldName = rawEntity["Name"],
+    originalFileName = Lookup[rawEntity, "FileName", None],
+
     bodyByteArray,
+
+    isFormField,
     contentTypeEncoding,
     bodyString,
+
     elementData
 },
-
-    fieldName = dispositionParameters["name"];
     If[
         (* if the required "name" field is missing *)
         !StringQ[fieldName],
@@ -331,10 +374,12 @@ parseMultipartFormElement[rawEntity_Association, OptionsPattern[]] := Module[{
         Return[None]
     ];
 
-    originalFileName = Lookup[dispositionParameters, "filename", None];
-    isFormField = !StringQ[originalFileName];
+    bodyByteArray = StringToByteArray[
+        Lookup[rawEntity, "Contents", ""],
+        "ISO8859-1"
+    ];
 
-    bodyByteArray = Lookup[rawEntity, "BodyByteArray", {}];
+    isFormField = !StringQ[originalFileName];
 
     If[
         (* if the part is a form field (rather than an uploaded file) *)
@@ -342,8 +387,8 @@ parseMultipartFormElement[rawEntity_Association, OptionsPattern[]] := Module[{
 
         (* then look for an indicated charset and use it to decode the body *)
         contentTypeEncoding = Lookup[
-            Lookup[contentType, "Parameters", <||>],
-            "charset",
+            rawEntity,
+            "CharacterEncoding",
             OptionValue["DefaultCharacterEncoding"],
             CloudObject`ToCharacterEncoding[#, None] &
         ];
@@ -362,7 +407,7 @@ parseMultipartFormElement[rawEntity_Association, OptionsPattern[]] := Module[{
         "ContentString" -> If[StringQ[bodyString], bodyString, bodyByteArray],
 
         "FieldName" -> fieldName,
-        "ContentType" -> Lookup[contentType, "Raw", None],
+        "ContentType" -> contentType,
         "OriginalFileName" -> originalFileName,
         "ByteCount" -> Length[bodyByteArray],
         "FormField" -> isFormField,
