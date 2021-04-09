@@ -251,7 +251,6 @@ parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
             "ISO8859-1"
         ]
     ] // checkMIMEToolsException;
-    Print[mimeMessage];
 
     If[
         (* if we couldn't open the message *)
@@ -289,7 +288,6 @@ parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
         "DecodedRawAttachments"
     ];
     MIMETools`MIMEMessageClose[mimeMessage];
-    Print[requestParts];
 
     If[
         (* if we couldn't get the body parts *)
@@ -333,24 +331,23 @@ getFormDataDefaultEncoding[bodyParts_List] := Module[{
     charsetPart = SelectFirst[
         bodyParts,
         And[
-            #["ContentDisposition", "Parameters", "name"] === "_charset_",
-            !StringQ[#["ContentDisposition", "Parameters", "filename"]], (* field is form field *)
-            Length[#BodyByteArray] < 50 (* not unexpectedly long *)
+            #["Name"] === "_charset_",
+            !StringQ[#["FileName"]], (* field is form field, not uploaded file *)
+            StringQ[#["Contents"]], (* has a body *)
+            StringLength[#["Contents"]] < 50 (* the body isn't not unexpectedly long *)
         ] &,
         None
-    ],
-    charsetString,
-    characterEncodingString
+    ]
 },
     If[
         !AssociationQ[charsetPart],
         Return[None]
     ];
 
-    charsetString = ByteArrayToString[charsetPart["BodyByteArray"], "ISO8859-1"];
-    characterEncodingString = CloudObject`ToCharacterEncoding[charsetString, None];
-
-    Return@Replace[characterEncodingString, Except[_String] -> None]
+    Return@Replace[
+        CloudObject`ToCharacterEncoding[charsetPart["Contents"], None],
+        Except[_String] -> None
+    ]
 ]
 
 
@@ -392,8 +389,8 @@ parseMultipartFormElement[rawEntity_Association, OptionsPattern[]] := Module[{
 
         (* then look for an indicated charset and use it to decode the body *)
         contentTypeEncoding = Lookup[
-            Lookup[contentType, "Parameters", <||>],
-            "charset",
+            rawEntity,
+            "CharacterEncoding",
             OptionValue["DefaultCharacterEncoding"],
             CloudObject`ToCharacterEncoding[#, None] &
         ];
