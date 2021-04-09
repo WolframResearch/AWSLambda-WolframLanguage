@@ -229,6 +229,7 @@ parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
         Return[None]
     ];
 
+    (* reconstitute the request header so that MIMETools can parse it *)
     requestHeaderBytes = StringToByteArray[
         StringJoin[
             Map[
@@ -245,6 +246,7 @@ parseHTTPRequestMultipartElements[request_HTTPRequest] := Module[{
     mimeMessage = MIMETools`MIMEMessageOpen[
         ByteArrayToString[
             Join[
+                (* prepend the reconstituted header to the request body *)
                 ByteArray[requestHeaderBytes],
                 request["BodyByteArray"]
             ],
