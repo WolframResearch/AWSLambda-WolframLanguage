@@ -1,2 +1,5 @@
+# Local machine-specific build data
 .aws-sam
+
+# `sam deploy` configuration (includes license entitlement ID)
 samconfig.toml

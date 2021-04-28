@@ -68,6 +68,8 @@ Resources:
       # This instructs SAM to automatically assign the alias "Deployed"
       # to new versions of the function, and to configure that alias with
       # one unit of provisioned concurrency.
+      # Remove the following three lines if you don't want to use
+      # provisioned concurrency.
       AutoPublishAlias: Deployed
       ProvisionedConcurrencyConfig:
         ProvisionedConcurrentExecutions: 1

@@ -70,6 +70,7 @@ URLDispatcher[{
 
     (* This is a computed HTML string. *)
     "/" -> Delayed@ExportForm[
+        Echo["Received request for root route"];
         TemplateApply@StringJoin@{
             "Hello! I am a URLDispatcher running in version ",
             "<* $VersionNumber *> of the Wolfram Engine. ",
