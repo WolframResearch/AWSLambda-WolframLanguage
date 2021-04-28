@@ -104,7 +104,7 @@ Ensure that your local Docker daemon is [authenticated to your account's ECR reg
 ```bash
 $ aws ecr get-login-password | docker login --username AWS --password-stdin 123456789012.dkr.ecr.us-east-1.amazonaws.com
 ```
-*(Replace `123456789012.dkr.ecr.us-east-1.amazonaws.com` with the domain name component of the `repositoryUri` from the previous command result.)*
+(Replace `123456789012.dkr.ecr.us-east-1.amazonaws.com` with the domain name component of the `repositoryUri` from the previous command result.)
 
 You can also install the [Amazon ECR Docker Credential Helper](https://github.com/awslabs/amazon-ecr-credential-helper) to facilitate Docker authentication with Amazon ECR.
 
@@ -187,6 +187,6 @@ See the [AWS SAM developer guide](https://docs.aws.amazon.com/serverless-applica
 
 <hr/>
 
-*This walkthrough is derived from an AWS-provided SAM CLI application template. The original document is located [here](https://github.com/aws/aws-sam-cli-app-templates/blob/master/nodejs14.x-image/cookiecutter-aws-sam-hello-nodejs-lambda-image/%7B%7Bcookiecutter.project_name%7D%7D/README.md).*  
-*The original document is licensed under the Apache-2.0 License, and carries the following notice:*  
+*This file is derived from an AWS-provided SAM CLI application template. The original document from which this walkthrough has been modified is located [here](https://github.com/aws/aws-sam-cli-app-templates/blob/master/nodejs14.x-image/cookiecutter-aws-sam-hello-nodejs-lambda-image/%7B%7Bcookiecutter.project_name%7D%7D/README.md).*  
+*The repository containing the original document is licensed under the [Apache-2.0 License](https://github.com/aws/aws-sam-cli-app-templates/blob/master/LICENSE), and carries the following notice:*  
 *`Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.`*
