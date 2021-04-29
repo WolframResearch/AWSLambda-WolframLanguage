@@ -122,7 +122,7 @@ $ sam deploy --guided
 
 The first command will build a container image from the [Dockerfile](example-http-function/Dockerfile). The second command will package and deploy your application to AWS after a series of prompts:
 
-- **Stack Name**: The name of the stack to deploy to CloudFormation. This should be unique to your account and region, and a good starting point would be something matching your project name. In this example, we will use `example-http-wl-sam-app`.
+- **Stack Name**: The name of the stack to deploy to CloudFormation. This should be unique to your account and region. In this example, we will use `example-http-wl-sam-app`.
 - **AWS Region**: The [AWS region](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-regions) you want to deploy your app to.
 - **Parameter OnDemandLicenseEntitlementID**: Your license entitlement ID from the previous step. This parameter is masked, so the text you type/paste will not be echoed back to you.
 - **Image Repository for ExampleHTTPFunction**: The ECR `repositoryUri` from the previous step.
