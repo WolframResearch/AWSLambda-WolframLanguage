@@ -70,19 +70,21 @@ You may adjust these settings as needed for your use case. For more information,
 
 Before deploying your application, you must create an [Amazon Elastic Container Registry (ECR)](https://docs.aws.amazon.com/AmazonECR/latest/userguide/what-is-ecr.html) repository in which to store the container image for your function.
 
+**NOTE:** If you wish, you can use one repository with multiple applications. Doing so can greatly reduce the time spent on the initial push, because large layers (e.g. the OS and Wolfram Engine) can be shared between images. If you have already created the `example-wl-sam-apps` repository during the [HTTP-mode walkthrough](../http-mode/README.md), you can use the `repositoryUri` from before and skip this step.
+
 To create the repository, run the following in your shell:
 ```bash
-$ aws ecr create-repository --repository-name example-raw-wl-sam-app
+$ aws ecr create-repository --repository-name example-wl-sam-apps
 ```
 
 This will return a JSON document like:
 ```json
 {
     "repository": {
-        "repositoryArn": "arn:aws:ecr:us-east-1:123456789012:repository/example-raw-wl-sam-app",
+        "repositoryArn": "arn:aws:ecr:us-east-1:123456789012:repository/example-wl-sam-apps",
         "registryId": "123456789012",
-        "repositoryName": "example-raw-wl-sam-app",
-        "repositoryUri": "123456789012.dkr.ecr.us-east-1.amazonaws.com/example-raw-wl-sam-app", 
+        "repositoryName": "example-wl-sam-apps",
+        "repositoryUri": "123456789012.dkr.ecr.us-east-1.amazonaws.com/example-wl-sam-apps", 
         "createdAt": "2021-04-28T17:27:48-04:00",
         "imageTagMutability": "MUTABLE",
         "imageScanningConfiguration": {
@@ -155,6 +157,8 @@ $ aws lambda invoke \
 }
 {"reversed":"dlroW olleH"}
 ```
+
+**NOTE:** If you wish to minimize invocation latency, consider enabling [provisioned concurrency](https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html#configuration-concurrency-provisioned) as described in the [HTTP-mode walkthrough](../http-mode/README.md).
 
 
 ## Add a resource to your application
