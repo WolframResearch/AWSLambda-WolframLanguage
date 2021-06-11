@@ -4,16 +4,16 @@ AWSLambdaRuntime`StartRuntime
 
 Begin["`Private`"]
 
+AWSLambdaRuntime`Utility`DebugLogTiming["Before loading dependencies"]
 Block[{$ContextPath},
     Needs["CloudObject`"];
     Needs["CURLLink`"];
 ]
+AWSLambdaRuntime`Utility`DebugLogTiming["After loading dependencies"]
 
 Needs["AWSLambdaRuntime`API`"]
 Needs["AWSLambdaRuntime`Modes`"]
 Needs["AWSLambdaRuntime`Utility`"]
-
-logTiming[args___] := Print[DateList[], " ", args]
 
 (* ::Section:: *)
 (* Environment variables *)
@@ -21,12 +21,6 @@ logTiming[args___] := Print[DateList[], " ", args]
 AWSLambdaRuntime`$LambdaRuntimeAPIHost = Environment["AWS_LAMBDA_RUNTIME_API"]
 AWSLambdaRuntime`$LambdaRuntimeAPIVersion = "2018-06-01"
 
-
-Print["Context info at top of main file: ", ToString[<|
-    "Context" -> $Context,
-    "ContextPath" -> $ContextPath,
-    "Packages" -> Sort@$Packages
-|>, InputForm]]
 
 (* ::Section:: *)
 (* Handler initialization and main loop *)
@@ -36,7 +30,7 @@ AWSLambdaRuntime`StartRuntime[] := Module[{
     validateResult,
     invocationData
 },
-    logTiming["Start of StartRuntime"];
+    AWSLambdaRuntime`Utility`DebugLogTiming["Start of StartRuntime"];
     If[
         (* if the API host is not set *)
         !StringQ[AWSLambdaRuntime`$LambdaRuntimeAPIHost],
@@ -47,15 +41,9 @@ AWSLambdaRuntime`StartRuntime[] := Module[{
     ];
 
     (* load the handler expression from the handler file *)
-    logTiming["Loading handler"];
+    AWSLambdaRuntime`Utility`DebugLogTiming["Before loading handler"];
     handler = loadHandler[];
-    logTiming["Loaded handler"];
-
-    Print["Context info after loading handler: ", ToString[<|
-        "Context" -> $Context,
-        "ContextPath" -> $ContextPath,
-        "Packages" -> Sort@$Packages
-    |>, InputForm]];
+    AWSLambdaRuntime`Utility`DebugLogTiming["After loading handler"];
 
     If[
         (* if loadHandler failed *)
@@ -65,11 +53,13 @@ AWSLambdaRuntime`StartRuntime[] := Module[{
     ];
 
     (* perform initialization steps like loading dependencies *)
+    AWSLambdaRuntime`Utility`DebugLogTiming["Before initializing handler mode"];
     Block[{$ContextPath},
         AWSLambdaRuntime`Modes`InitializeMode[
             AWSLambdaRuntime`Handler`$AWSLambdaHandlerMode
         ];
     ];
+    AWSLambdaRuntime`Utility`DebugLogTiming["After initializing handler mode"];
 
     validateResult = AWSLambdaRuntime`Modes`ValidateHandler[
         AWSLambdaRuntime`Handler`$AWSLambdaHandlerMode,
@@ -83,7 +73,7 @@ AWSLambdaRuntime`StartRuntime[] := Module[{
         AWSLambdaRuntime`API`ExitWithInitializationError[validateResult]
     ];
 
-    logTiming["Starting main loop"];
+    AWSLambdaRuntime`Utility`DebugLogTiming["Starting main loop"];
 
     (* main loop: long-poll for invocations and process them *)
     While[True,
@@ -376,7 +366,7 @@ processInvocation[
         ]
     ];
 
-    logTiming["Before evaluating handler"];
+    AWSLambdaRuntime`Utility`DebugLogTiming["Before evaluating handler"];
     handlerOutput = Block[{
         AWSLambdaRuntime`Handler`$AWSLambdaContextData = requestContextData
     },
@@ -387,13 +377,7 @@ processInvocation[
             requestContextData
         ]
     ];
-    logTiming["After evaluating handler"];
-
-    Print["Context info after evaluating handler: ", ToString[<|
-        "Context" -> $Context,
-        "ContextPath" -> $ContextPath,
-        "Packages" -> Sort@$Packages
-    |>, InputForm]];
+    AWSLambdaRuntime`Utility`DebugLogTiming["After evaluating handler"];
 
     AWSLambdaRuntime`API`SendInvocationResponse[requestID, handlerOutput];
 ]

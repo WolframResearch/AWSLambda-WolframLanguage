@@ -13,6 +13,23 @@ AWSLambdaRuntime`Handler`$AWSLambdaUsePlainTextResponse = Lookup[
 ] === "1"
 
 (* ::Subsection:: *)
+(* Logging *)
+
+$debugLogsEnabled = Lookup[GetEnvironment[], "WOLFRAM_LAMBDA_DEBUG_LOGS"] === "1"
+
+SetAttributes[AWSLambdaRuntime`Utility`DebugEcho, HoldAll]
+AWSLambdaRuntime`Utility`DebugEcho[args___] := If[
+    $debugLogsEnabled,
+    Echo[args]
+]
+
+SetAttributes[AWSLambdaRuntime`Utility`DebugLogTiming, HoldAll]
+AWSLambdaRuntime`Utility`DebugLogTiming[msg_] := If[
+    $debugLogsEnabled,
+    Echo[msg, DateList[]]
+]
+
+(* ::Subsection:: *)
 (* WithCleanContext - evaluate an expression with clean $Context and $ContextPath *)
 
 SetAttributes[AWSLambdaRuntime`Utility`WithCleanContext, HoldFirst]

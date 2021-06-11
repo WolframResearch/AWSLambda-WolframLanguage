@@ -27,7 +27,7 @@ AWSLambdaRuntime`API`GetNextInvocation[] := Module[{
         request,
         TimeConstraint -> Infinity
     ];
-    Echo[response, {DateList[], "received"}];
+    AWSLambdaRuntime`Utility`DebugEcho[response, {DateList[], "Received invocation"}];
 
     If[
         (* if the request failed *)
@@ -53,17 +53,18 @@ AWSLambdaRuntime`API`SendInvocationResponse[
     requestID_String,
     data_ByteArray
 ] := Module[{
-    request
+    request,
+    response
 },
     request = buildAPIRequest[<|
         "Method" -> "POST",
         "Path" -> {"runtime/invocation", requestID, "response"},
         "Body" -> data
     |>];
-    Echo[request, {DateList[], "sending"}];
+    AWSLambdaRuntime`Utility`DebugEcho[request, {DateList[], "Sending response"}];
 
     response = handleAPIResponseError@URLRead[request];
-    Echo[response, {DateList[], "received"}];
+    AWSLambdaRuntime`Utility`DebugEcho[response, {DateList[], "Sent response"}];
 
     If[
         FailureQ[response],
@@ -198,10 +199,10 @@ AWSLambdaRuntime`API`SendInvocationError[
         "Path" -> {"runtime/invocation", requestID, "error"},
         failureToErrorRequest[failure]
     |>];
-    Echo[request, {DateList[], "sending"}];
+    AWSLambdaRuntime`Utility`DebugEcho[request, {DateList[], "Sending error"}];
 
     response = handleAPIResponseError@URLRead[request];
-    Echo[response, {DateList[], "received"}];
+    AWSLambdaRuntime`Utility`DebugEcho[response, {DateList[], "Sent error"}];
 
     If[
         FailureQ[response],
@@ -224,9 +225,11 @@ AWSLambdaRuntime`API`ExitWithInitializationError[
         "Path" -> "runtime/init/error",
         failureToErrorRequest[failure]
     |>];
-    Echo[request, {DateList[], "sending"}];
+    AWSLambdaRuntime`Utility`DebugEcho[request, {DateList[], "Sending init error"}];
+
     response = handleAPIResponseError@URLRead[request];
-    Echo[response, {DateList[], "received"}];
+    AWSLambdaRuntime`Utility`DebugEcho[response, {DateList[], "Sent init error"}];
+
     Exit[41]
 ]
 
@@ -294,7 +297,7 @@ handleAPIResponseError[response_HTTPResponse] := Switch[
 
     _Integer?(Between[{200, 299}]),
         Return[response],
-    
+
     (* per API spec: "Container error. Non-recoverable state.
         Runtime should exit promptly." *)
     500,
@@ -311,7 +314,7 @@ handleAPIResponseError[response_HTTPResponse] := Switch[
 
     400 | 403 | 413,
         Return[errorResponseToFailure[response]],
-    
+
     _,
         Return@Failure["UnknownStatusCode", <|
             "MessageTemplate" -> "Unknown response status code `1`",
