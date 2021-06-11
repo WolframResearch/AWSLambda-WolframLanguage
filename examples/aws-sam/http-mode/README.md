@@ -7,7 +7,7 @@ This project contains source code and supporting files for an example Wolfram La
   - [`Dockerfile`](example-http-function/Dockerfile): Build configuration for the function's associated container image.
 - [`template.yaml`](template.yaml): A template that defines the application's AWS resources.
 
-The application uses several AWS resources, including Lambda functions and an [API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/welcome.html) API. These resources are defined in the [`template.yaml`](template.yaml) file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
+The application uses several AWS resources, including a Lambda function and an [API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/welcome.html) API. These resources are defined in the [`template.yaml`](template.yaml) file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
 
 **NOTE:** The [default configuration](template.yaml) of this example enables [provisioned concurrency](https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html#configuration-concurrency-provisioned) on the application's Lambda function in order to ensure quick response times from the deployed API. Provisioned concurrency has an [associated cost](https://aws.amazon.com/lambda/pricing/#Provisioned_Concurrency_Pricing). At the time of writing, for this example function as configured, the cost in the `us-east-1` region is ~$0.008 per hour (~$5.71/month), in addition to pricing based on request count and duration. If you don't want to use provisioned concurrency, you should remove the relevant lines in [`template.yaml`](template.yaml) before deploying the application.
 
@@ -70,7 +70,7 @@ You may adjust these settings as needed for your use case. For more information,
 
 *The instructions in this section are based on the AWS blog post ["Using container image support for AWS Lambda with AWS SAM"](https://aws.amazon.com/blogs/compute/using-container-image-support-for-aws-lambda-with-aws-sam/).*
 
-Before deploying your application, you must create an Amazon Elastic Container Registry (ECR) repository in which to store the container image for your function.
+Before deploying your application, you must create an [Amazon Elastic Container Registry (ECR)](https://docs.aws.amazon.com/AmazonECR/latest/userguide/what-is-ecr.html) repository in which to store the container image for your function.
 
 To create the repository, run the following in your shell:
 ```bash
@@ -138,8 +138,8 @@ The initial deployment of your application may take several minutes, as Docker w
 
 You can find the URL of your API Gateway endpoint in the output values displayed after deployment:
 ```
-Key                 ExampleHTTPFunctionAPI                                                                                                                                                                                        
-Description         API Gateway endpoint URL for Prod stage for example HTTP-based function                                                                                                                                       
+Key                 ExampleHTTPFunctionAPI
+Description         API Gateway endpoint URL for Prod stage for example HTTP-based function
 Value               https://sqn96odt1j.execute-api.us-east-1.amazonaws.com/Prod/
 ```
 
@@ -188,6 +188,6 @@ See the [AWS SAM developer guide](https://docs.aws.amazon.com/serverless-applica
 
 <hr/>
 
-*This file is derived from an AWS-provided SAM CLI application template. The original document from which this walkthrough has been modified is located [here](https://github.com/aws/aws-sam-cli-app-templates/blob/master/nodejs14.x-image/cookiecutter-aws-sam-hello-nodejs-lambda-image/%7B%7Bcookiecutter.project_name%7D%7D/README.md).*  
+*This file is derived from an AWS-provided SAM CLI application template. The original document from which this walkthrough has been modified is located [here](https://github.com/aws/aws-sam-cli-app-templates/blob/de97a7aac7ee8416f3310d7bd005b391f1ff1ac0/nodejs14.x-image/cookiecutter-aws-sam-hello-nodejs-lambda-image/%7B%7Bcookiecutter.project_name%7D%7D/README.md).*  
 *The repository containing the original document is licensed under the [Apache-2.0 License](https://github.com/aws/aws-sam-cli-app-templates/blob/master/LICENSE), and carries the following notice:*  
 *`Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.`*
