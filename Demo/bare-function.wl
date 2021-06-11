@@ -1,3 +1,0 @@
-<|
-    "reversed" -> StringReverse[#input]
-|> &

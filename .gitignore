@@ -1,1 +1,7 @@
 *.code-workspace
+
+Scripts/build-test.sh
+Scripts/push-test.sh
+Scripts/run-test.sh
+
+Test/*
