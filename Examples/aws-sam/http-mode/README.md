@@ -168,7 +168,7 @@ $ sam logs -n ExampleHTTPFunction --stack-name example-http-wl-sam-app
 2021/04/28/[1]394e19114a6149f097066a19c6a5da39 2021-04-28T23:02:03.084000 START RequestId: c3bf978f-59da-4bb3-9eb7-9a105fa93692 Version: 1
 2021/04/28/[1]394e19114a6149f097066a19c6a5da39 2021-04-28T23:02:03.093000 >> Received request for root route
 2021/04/28/[1]394e19114a6149f097066a19c6a5da39 2021-04-28T23:02:03.361000 END RequestId: c3bf978f-59da-4bb3-9eb7-9a105fa93692
-2021/04/28/[1]394e19114a6149f097066a19c6a5da39 2021-04-28T23:02:03.361000 REPORT RequestId: c3bf978f-59da-4bb3-9eb7-9a105fa93692                                                                                                 Duration: 274.85 ms      Billed Duration: 275 ms Memory Size: 512 MB     Max Memory Used: 317 MB
+2021/04/28/[1]394e19114a6149f097066a19c6a5da39 2021-04-28T23:02:03.361000 REPORT RequestId: c3bf978f-59da-4bb3-9eb7-9a105fa93692    Duration: 274.85 ms    Billed Duration: 275 ms    Memory Size: 512 MB    Max Memory Used: 317 MB
 ```
 
 You can add the `--tail` option to stream logs to your terminal in near-real time. You can find information and examples about filtering Lambda function logs in the [SAM CLI documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).

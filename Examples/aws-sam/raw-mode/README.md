@@ -180,7 +180,7 @@ $ sam logs -n ExampleRawFunction --stack-name example-raw-wl-sam-app
 2021/04/28/[$LATEST]b0d33af52c2644e6ae9c6d76a6cda134 2021-04-28T23:02:02.507000 Wolfram Language 12.3.0 Engine for Linux x86 (64-bit)
 2021/04/28/[$LATEST]b0d33af52c2644e6ae9c6d76a6cda134 2021-04-28T23:02:05.726000 Copyright 1988-2021 Wolfram Research, Inc.
 2021/04/28/[$LATEST]b0d33af52c2644e6ae9c6d76a6cda134 2021-04-28T23:02:07.424000 END RequestId: f27d9984-efa0-4220-aec9-fdb863e0244e
-2021/04/28/[$LATEST]b0d33af52c2644e6ae9c6d76a6cda134 2021-04-28T23:02:07.424000 REPORT RequestId: f27d9984-efa0-4220-aec9-fdb863e0244e  Duration: 169.94 ms     Billed Duration: 6767 ms        Memory Size: 512 MB     Max Memory Used: 234 MB   Init Duration: 6596.33 ms
+2021/04/28/[$LATEST]b0d33af52c2644e6ae9c6d76a6cda134 2021-04-28T23:02:07.424000 REPORT RequestId: f27d9984-efa0-4220-aec9-fdb863e0244e    Duration: 169.94 ms    Billed Duration: 6767 ms    Memory Size: 512 MB    Max Memory Used: 234 MB    Init Duration: 6596.33 ms
 ```
 
 You can add the `--tail` option to stream logs to your terminal in near-real time. You can find information and examples about filtering Lambda function logs in the [SAM CLI documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).
