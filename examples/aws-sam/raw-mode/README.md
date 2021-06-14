@@ -35,8 +35,8 @@ If you do not have [Wolfram Mathematica](https://www.wolfram.com/mathematica/), 
 Use the [`CreateLicenseEntitlement` function](https://reference.wolfram.com/language/ref/CreateLicenseEntitlement.html) to create a new license entitlement linked to your Wolfram Account:
 ```wl
 In[1]:= entitlement = CreateLicenseEntitlement[<|
-    "StandardKernelLimit" -> 10, 
-    "LicenseExpiration" -> Quantity[1, "Week"], 
+    "StandardKernelLimit" -> 10,
+    "LicenseExpiration" -> Quantity[1, "Week"],
     "EntitlementExpiration" -> Quantity[1, "Years"]
 |>]
 
@@ -47,9 +47,9 @@ Out[1]= LicenseEntitlementObject["O-WSTD-DA42-GKX4Z6NR2DSZR", <|
         "Parallel" -> Quantity[4., "Credits"/"Hours"]
     |>,
     "KernelLimits" -> <|"Standard" -> 6, "Parallel" -> 0|>,
-    "CreationDate" -> DateObject[{2021, 4, 28, 16, 50, 49.}, "Instant", "Gregorian", -4.], 
+    "CreationDate" -> DateObject[{2021, 4, 28, 16, 50, 49.}, "Instant", "Gregorian", -4.],
     "ExpirationDate" -> DateObject[{2022, 4, 28, 16, 50, 49.}, "Instant", "Gregorian", -4.],
-    "LicenseExpirationDuration" -> Quantity[MixedMagnitude[{7, 0.}], 
+    "LicenseExpirationDuration" -> Quantity[MixedMagnitude[{7, 0.}],
     MixedUnit[{"Days", "Hours"}]]
 |>]
 ```
@@ -84,7 +84,7 @@ This will return a JSON document like:
         "repositoryArn": "arn:aws:ecr:us-east-1:123456789012:repository/example-wl-sam-apps",
         "registryId": "123456789012",
         "repositoryName": "example-wl-sam-apps",
-        "repositoryUri": "123456789012.dkr.ecr.us-east-1.amazonaws.com/example-wl-sam-apps", 
+        "repositoryUri": "123456789012.dkr.ecr.us-east-1.amazonaws.com/example-wl-sam-apps",
         "createdAt": "2021-04-28T17:27:48-04:00",
         "imageTagMutability": "MUTABLE",
         "imageScanningConfiguration": {
@@ -113,7 +113,7 @@ You can also install the [Amazon ECR Docker Credential Helper](https://github.co
 
 The Serverless Application Model Command Line Interface (SAM CLI) is an extension of the AWS CLI that adds functionality for building and testing Lambda applications. It uses Docker to build a container image containing your function code, and it interfaces with [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html) to deploy your application to AWS. For more information on using container image-based Lambda functions with AWS SAM, see the AWS blog post ["Using container image support for AWS Lambda with AWS SAM"](https://aws.amazon.com/blogs/compute/using-container-image-support-for-aws-lambda-with-aws-sam/).
 
-To build and deploy your application for the first time, run the following in your shell:
+To build and deploy your application for the first time, run the following in your shell from within the [`Examples/aws-sam/raw-mode`](./) directory:
 
 ```bash
 $ sam build
@@ -202,6 +202,6 @@ See the [AWS SAM developer guide](https://docs.aws.amazon.com/serverless-applica
 
 <hr/>
 
-*This file is derived from an AWS-provided SAM CLI application template. The original document from which this walkthrough has been modified is located [here](https://github.com/aws/aws-sam-cli-app-templates/blob/de97a7aac7ee8416f3310d7bd005b391f1ff1ac0/nodejs14.x-image/cookiecutter-aws-sam-hello-nodejs-lambda-image/%7B%7Bcookiecutter.project_name%7D%7D/README.md).*  
-*The repository containing the original document is licensed under the [Apache-2.0 License](https://github.com/aws/aws-sam-cli-app-templates/blob/master/LICENSE), and carries the following notice:*  
+*This file is derived from an AWS-provided SAM CLI application template. The original document from which this walkthrough has been modified is located [here](https://github.com/aws/aws-sam-cli-app-templates/blob/de97a7aac7ee8416f3310d7bd005b391f1ff1ac0/nodejs14.x-image/cookiecutter-aws-sam-hello-nodejs-lambda-image/%7B%7Bcookiecutter.project_name%7D%7D/README.md).*
+*The repository containing the original document is licensed under the [Apache-2.0 License](https://github.com/aws/aws-sam-cli-app-templates/blob/master/LICENSE), and carries the following notice:*
 *`Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.`*
