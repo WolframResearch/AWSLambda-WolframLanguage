@@ -2,7 +2,7 @@
 # The original file from which this file has been modified is located at:
 # https://github.com/aws/aws-sam-cli-app-templates/blob/de97a7aac7ee8416f3310d7bd005b391f1ff1ac0/nodejs14.x-image/cookiecutter-aws-sam-hello-nodejs-lambda-image/%7B%7Bcookiecutter.project_name%7D%7D/template.yaml
 # The repository containing the original file is licensed under the Apache-2.0 License
-# (https://github.com/aws/aws-sam-cli-app-templates/blob/master/LICENSE)
+# (https://github.com/aws/aws-sam-cli-app-templates/blob/115fc2d1557d70690b1826ce79d0bc033e09728e/LICENSE)
 # and carries the following notice:
 # > Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 

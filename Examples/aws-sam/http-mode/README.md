@@ -191,5 +191,5 @@ See the [AWS SAM developer guide](https://docs.aws.amazon.com/serverless-applica
 <hr/>
 
 *This file is derived from an AWS-provided SAM CLI application template. The original document from which this walkthrough has been modified is located [here](https://github.com/aws/aws-sam-cli-app-templates/blob/de97a7aac7ee8416f3310d7bd005b391f1ff1ac0/nodejs14.x-image/cookiecutter-aws-sam-hello-nodejs-lambda-image/%7B%7Bcookiecutter.project_name%7D%7D/README.md).*
-*The repository containing the original document is licensed under the [Apache-2.0 License](https://github.com/aws/aws-sam-cli-app-templates/blob/master/LICENSE), and carries the following notice:*
+*The repository containing the original document is licensed under the [Apache-2.0 License](https://github.com/aws/aws-sam-cli-app-templates/blob/115fc2d1557d70690b1826ce79d0bc033e09728e/LICENSE), and carries the following notice:*
 *`Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.`*
