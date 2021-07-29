@@ -18,7 +18,7 @@
 
 ## Image Variants
 
-### `wolframresearch/wolframengine:latest`
+### `wolframresearch/aws-lambda-wolframlanguage:latest`
 
 *Base: [`wolframresearch/wolframengine:latest`](https://hub.docker.com/r/wolframresearch/wolframengine)*  
 This image is based on the `latest` tag of the `wolframresearch/wolframengine` image, and hence contains the latest version of the Wolfram Engine.
