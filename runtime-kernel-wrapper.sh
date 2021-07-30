@@ -13,12 +13,10 @@ WL_INIT_DIRECTORIES='Developer`ConfigureUser[None, "/tmp/home"];'\
 'Protect[$HomeDirectory, $UserDocumentsDirectory, $WolframDocumentsDirectory];'
 
 # launch the runtime
-WL_RUNTIME_START='Print["Start of -run (before Get) ", DateList[]];'\
-'Get["AWSLambdaRuntime`"];'\
+WL_RUNTIME_START='Get["AWSLambdaRuntime`"];'\
 'AWSLambdaRuntime`StartRuntime[];'\
 'Exit[0]'
 
-echo "Before kernel start - $(date +%H:%M:%S.%N)"
 exec /usr/local/bin/WolframKernel \
   -pwfile '!cloudlm.wolfram.com' \
   -entitlement $WOLFRAMSCRIPT_ENTITLEMENTID \
