@@ -35,29 +35,31 @@ If you do not have [Wolfram Mathematica](https://www.wolfram.com/mathematica/), 
 Use the [`CreateLicenseEntitlement` function](https://reference.wolfram.com/language/ref/CreateLicenseEntitlement.html) to create a new license entitlement linked to your Wolfram Account:
 ```wl
 In[1]:= entitlement = CreateLicenseEntitlement[<|
-    "StandardKernelLimit" -> 10,
+    "Policy" -> "WLMBDA",
+    "StandardKernelLimit" -> 15,
     "LicenseExpiration" -> Quantity[1, "Week"],
     "EntitlementExpiration" -> Quantity[1, "Years"]
 |>]
 
-Out[1]= LicenseEntitlementObject["O-WSTD-DA42-GKX4Z6NR2DSZR", <|
-    "PolicyID" -> "WSTD", "PolicyName" -> "Standard", "BillingInterval" -> Quantity[900, "Seconds"],
+Out[1]= LicenseEntitlementObject["O-WLMBDA-DA42-5Z2SW6WKQQL", <|
+    "PolicyID" -> "WLMBDA", "PolicyName" -> "AWS Lambda runtime",
+    "BillingInterval" -> Quantity[900, "Seconds"],
     "KernelCosts" -> <|
         "Standard" -> Quantity[4., "Credits"/"Hours"],
         "Parallel" -> Quantity[4., "Credits"/"Hours"]
     |>,
-    "KernelLimits" -> <|"Standard" -> 6, "Parallel" -> 0|>,
+    "KernelLimits" -> <|"Standard" -> 15, "Parallel" -> 0|>,
     "CreationDate" -> DateObject[{2021, 4, 28, 16, 50, 49.}, "Instant", "Gregorian", -4.],
     "ExpirationDate" -> DateObject[{2022, 4, 28, 16, 50, 49.}, "Instant", "Gregorian", -4.],
-    "LicenseExpirationDuration" -> Quantity[MixedMagnitude[{7, 0.}],
-    MixedUnit[{"Days", "Hours"}]]
+    "LicenseExpirationDuration" -> Quantity[MixedMagnitude[{7, 0.}], MixedUnit[{"Days", "Hours"}]]
 |>]
 ```
 
-Take note of the returned entitlement ID (`O-WSTD-DA42-GKX4Z6NR2DSZR` above); you will need it when you deploy your application in a subsequent step. This entitlement ID should be treated as an application secret and not committed to source control or exposed to the public.
+Take note of the returned entitlement ID (`O-WLMBDA-DA42-5Z2SW6WKQQL` above); you will need it when you deploy your application in a subsequent step. This entitlement ID should be treated as an application secret and not committed to source control or exposed to the public.
 
 The meanings of the specified entitlement settings are:
-- `"StandardKernelLimit" -> 10`: Up to ten kernels may run concurrently. (This means ten instances of your Lambda function.)
+- `"Policy" -> "WLMBDA"`: Use the `WLMBDA` licensing policy, which is tailored for use with AWS Lambda. The associated on-demand license fee is 4 [Service Credits](https://www.wolfram.com/service-credits/) per kernel per hour.
+- `"StandardKernelLimit" -> 15`: Up to 15 kernels may run concurrently. (This means 15 instances of your Lambda function.)
 - `"LicenseExpiration" -> Quantity[1, "Week"]`: Each kernel may run for up to one week at a time.
 - `"EntitlementExpiration" -> Quantity[1, "Years"]`: The entitlement expires one year after creation. (This means you must create a new entitlement and replace it in your application once a year.)
 
