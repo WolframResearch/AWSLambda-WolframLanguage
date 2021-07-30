@@ -28,7 +28,7 @@ In order for the [Wolfram Engine](https://www.wolfram.com/engine/) kernel inside
 
 On-demand licensing is a pay-as-you-go licensing method whereby Wolfram Engine usage is billed against your [Wolfram Service Credits](https://www.wolfram.com/service-credits/) balance at a per-kernel-hour rate.
 This method allows you to run arbitrary numbers of concurrent Wolfram Engine kernels for pennies per kernel per hour, and to scale up and down in a cost-effective manner.
-You may use the starter Service Credits quota available with a free Wolfram Cloud Basic account for initial experimentation before purchasing more Service Credits.
+You may use the starter Service Credits quota available with a free Wolfram Cloud Basic account for initial experimentation before purchasing more Service Credits. With the instructions below, usage will be charged at 4 Service Credits per kernel per hour.
 
 An on-demand license entitlement is a reusable license key that can be used to activate one or more Wolfram Engine kernels.
 Creating an entitlement requires access to the Wolfram Language.
