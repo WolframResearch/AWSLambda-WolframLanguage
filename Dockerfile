@@ -2,6 +2,10 @@ FROM wolframresearch/wolframengine:latest
 
 USER root
 
+# temporary workaround for bug(413167)
+RUN apt-get update -y && \
+  apt-get install -y libglib2.0-0
+
 ENV LAMBDA_TASK_ROOT=/var/task
 ENV LAMBDA_RUNTIME_DIR=/var/runtime
 
