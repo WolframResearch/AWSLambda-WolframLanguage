@@ -37,3 +37,4 @@ and ability to address it**.
 When reporting issues, always include:
 
 * Lambda function [console logs](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html) from a failed invocation, if relevant.
+  * If possible, set the environment variable `WOLFRAM_LAMBDA_DEBUG_LOGS=1` on the Lambda function in order to include debugging information in the console logs.
