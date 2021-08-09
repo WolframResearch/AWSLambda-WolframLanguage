@@ -23,7 +23,7 @@ $ git clone https://github.com/WolframResearch/AWSLambda-WolframLanguage
 If you already have some or all of these tools installed, you can skip the appropriate steps.
 
 To follow this walkthrough, you will need the following tools:
-- AWS CLI - [Install the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html); [Configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-config)
+- AWS CLI v2 - [Install the AWS CLI](https://aws.amazon.com/cli/); [Configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-config)
 - Docker - [Install Docker Engine](https://docs.docker.com/engine/install/)
 - AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 
