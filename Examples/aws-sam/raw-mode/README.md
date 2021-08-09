@@ -1,6 +1,8 @@
 # Example AWS SAM app - raw mode function
 
-This project contains source code and supporting files for an example Wolfram Language-based serverless application that you can deploy with the [AWS SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) CLI. It includes the following files and folders:
+This document is a comprehensive walkthrough for the process of deploying a simple piece of Wolfram Language code to AWS Lambda as a raw-mode function. After installing the necessary tools, you will configure Wolfram Engine licensing for your function, create an [Amazon ECR](https://aws.amazon.com/ecr/) container image repository, and finally deploy the function using the [AWS SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) CLI.
+
+The [`Examples/aws-sam/raw-mode`](./) directory contains source code and supporting files for an example Wolfram Language-based serverless application that you can deploy with the [AWS SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) CLI. It includes the following files and folders:
 
 - [`example-raw-function/`](example-raw-function/): The application's Lambda function.
   - [`raw-handler-file.wl`](example-raw-function/raw-handler-file.wl): Code for the function (a pure function that reverses the characters in a string)
@@ -9,18 +11,26 @@ This project contains source code and supporting files for an example Wolfram La
 
 The application uses several AWS resources, including a Lambda function. These resources are defined in the [`template.yaml`](template.yaml) file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
 
+## Clone the repository
+
+If you have not done so already, you should clone this Git repository so that the code for the example is available on your local filesystem:
+```bash
+$ git clone https://github.com/WolframResearch/AWSLambda-WolframLanguage
+```
 
 ## Install dependencies
 
+If you already have some or all of these tools installed, you can skip the appropriate steps.
+
 To follow this walkthrough, you will need the following tools:
 - AWS CLI - [Install the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html); [Configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-config)
-- AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 - Docker - [Install Docker Engine](https://docs.docker.com/engine/install/)
+- AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 
 This walkthrough assumes that you have installed these tools, have access to [an AWS account](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/) and [security credentials](https://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html), and have access to the Wolfram Language through a product like [Wolfram Mathematica](https://www.wolfram.com/mathematica/) or [Wolfram Engine](https://www.wolfram.com/engine/).
 
 
-## Create an Wolfram Engine on-demand license entitlement
+## Create a Wolfram Engine on-demand license entitlement
 
 In order for the [Wolfram Engine](https://www.wolfram.com/engine/) kernel inside the Lambda function's container to run, it must be [activated](https://reference.wolfram.com/language/tutorial/ActivatingMathematica.html) using **on-demand licensing**.
 
@@ -40,7 +50,6 @@ In[1]:= entitlement = CreateLicenseEntitlement[<|
     "LicenseExpiration" -> Quantity[1, "Week"],
     "EntitlementExpiration" -> Quantity[1, "Years"]
 |>]
-
 Out[1]= LicenseEntitlementObject["O-WLMBDA-DA42-5Z2SW6WKQQL", <|
     "PolicyID" -> "WLMBDA", "PolicyName" -> "AWS Lambda runtime",
     "BillingInterval" -> Quantity[900, "Seconds"],
@@ -53,6 +62,9 @@ Out[1]= LicenseEntitlementObject["O-WLMBDA-DA42-5Z2SW6WKQQL", <|
     "ExpirationDate" -> DateObject[{2022, 4, 28, 16, 50, 49.}, "Instant", "Gregorian", -4.],
     "LicenseExpirationDuration" -> Quantity[MixedMagnitude[{7, 0.}], MixedUnit[{"Days", "Hours"}]]
 |>]
+
+In[2]:= entitlement["EntitlementID"]
+Out[2]= "O-WLMBDA-DA42-5Z2SW6WKQQL"
 ```
 
 Take note of the returned entitlement ID (`O-WLMBDA-DA42-5Z2SW6WKQQL` above); you will need it when you deploy your application in a subsequent step. This entitlement ID should be treated as an application secret and not committed to source control or exposed to the public.
@@ -115,9 +127,10 @@ You can also install the [Amazon ECR Docker Credential Helper](https://github.co
 
 The Serverless Application Model Command Line Interface (SAM CLI) is an extension of the AWS CLI that adds functionality for building and testing Lambda applications. It uses Docker to build a container image containing your function code, and it interfaces with [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html) to deploy your application to AWS. For more information on using container image-based Lambda functions with AWS SAM, see the AWS blog post ["Using container image support for AWS Lambda with AWS SAM"](https://aws.amazon.com/blogs/compute/using-container-image-support-for-aws-lambda-with-aws-sam/).
 
-To build and deploy your application for the first time, run the following in your shell from within the [`Examples/aws-sam/raw-mode`](./) directory:
+To build and deploy your application for the first time, run the following in your shell from within the [`Examples/aws-sam/raw-mode`](./) directory of the cloned Git repository:
 
 ```bash
+$ cd Examples/aws-sam/raw-mode
 $ sam build
 $ sam deploy --guided
 ```
@@ -129,8 +142,8 @@ The first command will build a container image from the [Dockerfile](example-raw
 - **Parameter OnDemandLicenseEntitlementID**: Your license entitlement ID from the previous step. This parameter is masked, so the text you type/paste will not be echoed back to you.
 - **Image Repository for ExampleRawFunction**: The ECR `repositoryUri` from the previous step.
 - **Confirm changes before deploy**: If enabled, any change sets will be shown to you for manual review before execution. If disabled, the AWS SAM CLI will automatically deploy application changes without prompting for review.
-- **Allow SAM CLI IAM role creation**: Many AWS SAM templates, including this example, create AWS IAM roles required for the included AWS Lambda function(s) to access AWS services. By default, these are scoped down to minimum required permissions. To deploy an AWS CloudFormation stack that creates or modifies IAM roles, the `CAPABILITY_IAM` value for `capabilities` must be provided. If permission isn't provided through this prompt, to deploy this example you must explicitly pass `--capabilities CAPABILITY_IAM` to the `sam deploy` command.
-- **Save arguments to configuration file**: If enabled, your choices will be saved to a `samlconfig.toml` configuration file in the current directory, so that in the future you can just re-run `sam deploy` without parameters to deploy changes to your application.
+- **Allow SAM CLI IAM role creation**: Enter `y`. Many AWS SAM templates, including this example, create AWS IAM roles required for the included AWS Lambda function(s) to access AWS services. By default, these are scoped down to minimum required permissions. To deploy an AWS CloudFormation stack that creates or modifies IAM roles, the `CAPABILITY_IAM` value for `capabilities` must be provided. If permission isn't provided through this prompt, to deploy this example you must explicitly pass `--capabilities CAPABILITY_IAM` to the `sam deploy` command.
+- **Save arguments to configuration file**: Enter `y`. If enabled, your choices will be saved to a `samlconfig.toml` configuration file in the current directory, so that in the future you can just re-run `sam deploy` without parameters to deploy changes to your application.
 - **SAM configuration file** and **SAM configuration environment**: If you enabled the previous option, these options allow you to configure how the configuration file is saved. You may leave these options at their default values.
 
 For more information, see [the documentation for `sam deploy`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-deploy.html).
@@ -144,8 +157,8 @@ Description         Example raw-mode Lambda function
 Value               arn:aws:lambda:us-east-1:123456789012:function:example-raw-wl-sam-app-ExampleRawFunction-AKWQGDATPPTP
 ```
 
-You can invoke this function from the AWS CLI using [`aws lambda invoke`](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/lambda/invoke.html):
-
+You can invoke this function from the AWS CLI using [`aws lambda invoke`](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/lambda/invoke.html).  
+On Linux and macOS (Bash-like shells):
 ```bash
 $ aws lambda invoke \
   --function-name arn:aws:lambda:us-east-1:123456789012:function:example-raw-wl-sam-app-ExampleRawFunction-AKWQGDATPPTP \
@@ -159,6 +172,21 @@ $ aws lambda invoke \
 }
 {"reversed":"dlroW olleH"}
 ```
+
+In Powershell on Windows:
+```powershell
+PS C:\> aws lambda invoke --function-name arn:aws:lambda:us-east-1:123456789012:function:example-raw-wl-sam-app-ExampleRawFunction-AKWQGDATPPTP --payload '{""input"": ""Hello World""}' --cli-binary-format raw-in-base64-out output.json
+{
+    "StatusCode": 200,
+    "ExecutedVersion": "$LATEST"
+}
+
+PS C:\> cat .\output.json
+{"reversed":"dlroW olleH"}
+```
+
+
+In addition to the AWS CLI, raw-mode functions can be [invoked](https://docs.aws.amazon.com/lambda/latest/dg/lambda-invocation.html) using the [AWS Lambda API](https://docs.aws.amazon.com/lambda/latest/dg/API_Invoke.html); [AWS SDKs](https://aws.amazon.com/tools/); and [other AWS services](https://docs.aws.amazon.com/lambda/latest/dg/lambda-services.html) such as [Lex](https://docs.aws.amazon.com/lambda/latest/dg/services-lex.html), [S3](https://docs.aws.amazon.com/lambda/latest/dg/with-s3.html) and [SNS](https://docs.aws.amazon.com/lambda/latest/dg/with-sns.html). Wolfram Language clients can invoke arbitrary Lambda functions using the [AWS service connection](https://reference.wolfram.com/language/ref/service/AWS.html).
 
 **NOTE:** If you wish to minimize invocation latency, consider enabling [provisioned concurrency](https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html#configuration-concurrency-provisioned) as described in the [HTTP-mode walkthrough](../http-mode/README.md).
 
