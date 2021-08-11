@@ -60,7 +60,7 @@ FormPage[
 ```
 When deployed to AWS Lambda and Amazon API Gateway, the form page is accessible in a web browser via an API Gateway URL:
 
-![HTML page served by a FormPage in an HTTP-mode Lambda function](Examples/.images/HTTP-Function-FormPage.png)
+![HTML page served by a FormPage in an HTTP-mode Lambda function](https://raw.githubusercontent.com/WolframResearch/AWSLambda-WolframLanguage/master/Examples/.images/HTTP-Function-FormPage.png)
 
 HTTP-mode functions can be invoked via API Gateway by a web browser or any HTTP-capable program, including by Wolfram Language-based clients.
 
