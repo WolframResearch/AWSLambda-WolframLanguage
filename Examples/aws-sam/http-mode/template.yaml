@@ -47,6 +47,7 @@ Resources:
     Type: AWS::Serverless::Function
     Metadata:
       DockerContext: ./example-http-function
+      Dockerfile: Dockerfile
     Properties:
       PackageType: Image
       ImageConfig:

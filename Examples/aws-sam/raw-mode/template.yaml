@@ -34,6 +34,7 @@ Resources:
     Type: AWS::Serverless::Function
     Metadata:
       DockerContext: ./example-raw-function
+      Dockerfile: Dockerfile
     Properties:
       PackageType: Image
       ImageConfig:
