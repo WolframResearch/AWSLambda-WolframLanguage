@@ -25,7 +25,8 @@ AWSLambdaRuntime`API`GetNextInvocation[] := Module[{
     |>];
     response = handleAPIResponseError@URLRead[
         request,
-        TimeConstraint -> Infinity
+        (* workaround for bug(463718); Infinity doesn't work in versions 14.2~14.3 *)
+        TimeConstraint -> If[14.2 <= $VersionNumber < 15.0, 60 * 10, Infinity]
     ];
     AWSLambdaRuntime`Utility`DebugEcho[response, {DateList[], "Received invocation"}];
 
